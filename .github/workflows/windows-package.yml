@@ -16,7 +16,9 @@ jobs:
       - run: ./.venv/Scripts/python.exe -m pip install -e ".[dev]"
       - run: ./.venv/Scripts/python.exe -m ruff check .
       - run: ./.venv/Scripts/python.exe -m ruff format --check .
-      - run: ./.venv/Scripts/python.exe -m pytest
+      - name: Run tests
+        timeout-minutes: 5
+        run: ./.venv/Scripts/python.exe -m pytest -vv --maxfail=1 --timeout=60
       - shell: pwsh
         run: ./packaging/build_windows.ps1
       - uses: actions/upload-artifact@v4
