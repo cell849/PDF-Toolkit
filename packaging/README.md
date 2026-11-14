@@ -1,8 +1,18 @@
 # Windows packaging (M4)
 
 M5 Office functionality and its real-engine tests were completed before this
-packaging setup, as requested. This cloud workspace is Linux: a Windows executable
-cannot be built or verified here. The workflow below must run on Windows.
+packaging setup, as requested. The Windows executable has now been built and
+its spawned-worker self-test verified through GitHub Actions:
+
+https://github.com/cell849/tools/actions/runs/43655035967
+
+Download the `LocalPDFToolkit-Windows-x64` artifact (GitHub sign-in required),
+extract the downloaded artifact ZIP, then extract its enclosed Windows ZIP.
+Launch `LocalPDFToolkit/LocalPDFToolkit.exe` with the `_internal` folder beside it.
+Actions artifacts expire; the source/build workflow remains in the repository.
+Actual Windows 11 manual desktop and LibreOffice validation is still required.
+
+To build again, run the workflow or the following local instructions on Windows.
 
 On Windows 11 with 64-bit Python 3.13, follow root README.md to install `.[dev]`,
 then run from PowerShell:
@@ -19,7 +29,7 @@ It requires a 64-bit Python 3.13 environment and fails the self-test gate after
 same `.venv` used by the local build script and runs lint, formatting and tests
 before packaging.
 GitHub Actions `Windows package` can also be run manually once this repository
-is placed on GitHub; no workflow run is implied by creating the YAML file.
+is placed on GitHub. The successful run above is the recorded verification.
 
 Extract the entire archive; keep `_internal` beside the executable. Launch
 `LocalPDFToolkit.exe`. Python is bundled; LibreOffice is not. For Office → PDF,

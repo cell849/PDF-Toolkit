@@ -114,3 +114,31 @@ successfully with PyYAML; `git diff --check` passed. No Windows or PowerShell
 execution is claimed. The full application test suite was not repeated for
 this packaging configuration change. Actual Windows build, package launch and
 clean-machine verification remain pending a Windows execution target.
+
+
+# GitHub Windows build verification — 2026-11-15
+
+Repository: https://github.com/cell849/tools (private).
+Verified application commit: 68a3bb29ee52f6689252650127f8f32f65463969.
+Checks: https://github.com/cell849/tools/actions/runs/43655035831
+Package: https://github.com/cell849/tools/actions/runs/43655035967
+Artifact: https://github.com/cell849/tools/actions/runs/43655035967/artifacts/14136709874
+
+Both Windows and Ubuntu CI passed lint, format, and **128 tests, 9 skipped**.
+The nine real-LibreOffice conversions were skipped because those runners lack
+LibreOffice; earlier real-engine cloud results still apply only to that engine.
+The Windows PyInstaller build and the frozen executable's spawned-worker JPEG
+conversion self-test passed. The 83,412,107-byte Actions artifact contains the
+portable Windows ZIP. No installer, signing, public release, or clean Windows 11
+manual desktop/Office validation is claimed.
+
+Windows CI exposed and led to fixing a real controller bug: a closed Windows
+named pipe raises BrokenPipeError from poll(), unlike POSIX EOF handling. The
+controller now treats both as stream completion, with a regression test. Office
+tests were corrected to distinguish taskkill's process from the controlled child
+and to decode Windows file URIs with url2pathname. Linux CI now installs Qt's
+required EGL/OpenGL runtime libraries. Test runs have per-test and step timeouts.
+
+This section supersedes earlier statements that no Windows binary was built.
+Manual Windows 11 desktop testing and the optional final independent review
+remain outstanding. No uploaded user document was committed to the repository.

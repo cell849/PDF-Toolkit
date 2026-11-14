@@ -197,3 +197,9 @@ M4 preparation result: Windows build script/manual workflow and portable-folder
 instructions are supplied; the Linux frozen-build worker smoke test passed.
 Actual Windows executable generation and clean-Windows verification are pending.
 See VERIFICATION.md for measured results, not just planned acceptance gates.
+
+Windows CI result (2026-11-15): build and frozen-worker self-test succeeded on
+GitHub's Windows runner at commit 68a3bb2. Both platform checks passed 128 tests
+with nine missing-LibreOffice integration skips. See VERIFICATION.md for run
+and artifact URLs. M4 portable-package automation is complete; clean Windows 11
+manual validation remains outstanding. This supersedes the earlier build status.
