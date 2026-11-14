@@ -224,7 +224,9 @@ def test_subprocess_cancel_reaps_child(monkeypatch):
 
     def tracked(*args, **kwargs):
         child = real_popen(*args, **kwargs)
-        children.append(child)
+        # Windows cleanup also launches taskkill through subprocess.run.
+        if args and args[0][0] == sys.executable:
+            children.append(child)
         return child
 
     monkeypatch.setattr(office_pdf.subprocess, "Popen", tracked)
@@ -263,9 +265,10 @@ def test_mocked_office_conversion_uses_profile_and_safe_transaction(tmp_path, mo
             for argument in command
             if argument.startswith("-env:UserInstallation=")
         )
-        from urllib.parse import unquote, urlparse
+        from urllib.parse import urlparse
+        from urllib.request import url2pathname
 
-        profile = Path(unquote(urlparse(profile_url).path))
+        profile = Path(url2pathname(urlparse(profile_url).path))
         assert "MacroSecurityLevel" in (profile / "user/registrymodifications.xcu").read_text()
         staging = Path(command[command.index("--outdir") + 1])
         with pymupdf.open() as document:
