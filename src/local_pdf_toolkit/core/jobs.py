@@ -77,7 +77,9 @@ class JobController(QObject):
                     self._result = value
                 else:
                     self._error = value
-        except EOFError:
+        except (EOFError, BrokenPipeError):
+            # Windows poll() raises WinError 109 after the sender closes;
+            # POSIX generally reports EOF from recv(). Both mean end-of-stream.
             pass
 
     def _poll(self):

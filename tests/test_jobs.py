@@ -134,3 +134,34 @@ def test_close_during_conversion_cancels_and_waits(qapp, fixture_dir, tmp_path):
     assert not paths
     assert not window.isVisible()
     assert not list(tmp_path.iterdir())
+
+
+def test_windows_pipe_end_still_completes_job(qapp):
+    jobs = JobController()
+
+    class EndedPipe:
+        def poll(self):
+            raise BrokenPipeError(109, "The pipe has been ended")
+
+        def close(self):
+            pass
+
+    class FinishedProcess:
+        def is_alive(self):
+            return False
+
+        def join(self):
+            pass
+
+        def close(self):
+            pass
+
+    jobs._receiver = EndedPipe()
+    jobs._process = FinishedProcess()
+    jobs._result = ("completed.png",)
+    jobs._error = None
+    observed = []
+    jobs.finished.connect(lambda paths, error: observed.append((paths, error)))
+    jobs._poll()
+    assert observed == [(("completed.png",), None)]
+    assert not jobs.running
