@@ -1,0 +1,7 @@
+include AGENTS.md FEATURES.md PROJECT_PLAN.md VERIFICATION.md uv.lock .gitattributes .gitignore
+recursive-include tests *.py *.pdf *.md
+recursive-include .github *.yml
+
+include CAPABILITIES.md
+recursive-include benchmarks *.py *.json
+recursive-include packaging *.py *.ps1 *.md

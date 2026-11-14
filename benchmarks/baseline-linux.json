@@ -1,0 +1,29 @@
+{
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "python": "3.13.5",
+  "pymupdf": "1.26.7",
+  "input": "synthetic-100",
+  "input_bytes": 35899,
+  "dpi": 150,
+  "quality": 85,
+  "rss_sampling_ms": 20,
+  "runs": [
+    {
+      "run": "first_run",
+      "seconds": 6.662,
+      "peak_rss_mib_sampled": 66.76,
+      "output_count": 100,
+      "exit_code": 0,
+      "output_bytes": 2847734
+    },
+    {
+      "run": "repeat_run",
+      "seconds": 7.965,
+      "peak_rss_mib_sampled": 66.89,
+      "output_count": 100,
+      "exit_code": 0,
+      "output_bytes": 2847734
+    }
+  ],
+  "note": "Includes spawned-process startup. OS filesystem caches not flushed."
+}
