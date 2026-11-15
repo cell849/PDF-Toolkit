@@ -175,3 +175,11 @@ passed 15. Lint/format checks passed. Actual screen-reader, high-contrast Window
 and large system text testing remain manual; no accessibility certification is
 claimed. The release workflow gates the Windows download on tests and a frozen
 conversion self-test.
+
+v0.3.0 published from db28339 through Windows run
+https://github.com/cell849/tools/actions/runs/43658604803 . Windows package checks
+passed 138 tests with 9 missing-LibreOffice skips, and its frozen conversion
+self-test passed. Windows and Ubuntu matrix checks also passed. The initial
+Windows UI regression exposed 13 px of compact overflow; automatic sidebar
+collapse fixed it without weakening the no-overflow assertion. Native manual
+Windows 11 visual/accessibility verification is still outstanding.
