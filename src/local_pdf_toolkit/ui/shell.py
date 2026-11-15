@@ -162,6 +162,12 @@ class ToolCard(QPushButton):
             self._sync_height()
 
     def _sync_height(self):
+        content = self.layout()
+        margins = content.contentsMargins()
+        available = max(1, self.width() - margins.left() - margins.right())
+        for index in range(content.count()):
+            text = content.itemAt(index).widget()
+            text.setMinimumHeight(max(text.sizeHint().height(), text.heightForWidth(available)))
         height = self.heightForWidth(self.width())
         if self.minimumHeight() != height:
             self.setMinimumHeight(height)
