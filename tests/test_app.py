@@ -35,3 +35,47 @@ def test_search_cannot_run_hidden_operation(qapp):
         assert window.start_button.isEnabled()
     finally:
         window.close()
+
+
+def test_library_cards_categories_and_compact_workspace(qapp):
+    from PySide6.QtCore import Qt
+    from PySide6.QtTest import QTest
+    from PySide6.QtWidgets import QScrollArea
+
+    window = MainWindow(build_registry())
+    window.show()
+    try:
+        assert window.pages.currentWidget() == window.dashboard
+        assert len(window.library.cards) == len(window._operations)
+        window.navigation.setCurrentRow(4)  # Optimize
+        assert (
+            sum(
+                not window.operation_list.item(i).isHidden() for i in range(len(window._operations))
+            )
+            == 1
+        )
+        index = next(
+            i for i, spec in enumerate(window._operations) if spec.operation_id == "pdf.compress"
+        )
+        QTest.mouseClick(window.library.cards[index], Qt.LeftButton)
+        assert window.pages.currentWidget() == window.workspace
+        assert window.tool_title.text() == "Compress PDF"
+        window.resize(760, 620)
+        QTest.qWait(80)
+        previous_bottom = -1
+        for row in range(window.form.rowCount()):
+            label = window.form.itemAt(row, window.form.ItemRole.LabelRole).widget()
+            field = window.form.itemAt(row, window.form.ItemRole.FieldRole).widget()
+            assert label.geometry().top() > previous_bottom
+            assert field.geometry().top() > label.geometry().bottom()
+            previous_bottom = field.geometry().bottom()
+        for scroll in window.workspace.findChildren(QScrollArea):
+            assert scroll.horizontalScrollBar().maximum() == 0
+        window._set_active(True)
+        window._show_library()
+        assert window.pages.currentWidget() == window.workspace
+        window._set_active(False)
+        window._show_library()
+        assert window.pages.currentWidget() == window.dashboard
+    finally:
+        window.close()

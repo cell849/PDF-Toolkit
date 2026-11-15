@@ -10,3 +10,7 @@ dist/
 htmlcov/
 
 *.spec
+
+# Local design skill installation, not application dependencies
+.agents/
+skills-lock.json

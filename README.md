@@ -1,5 +1,7 @@
 # Local PDF Toolkit
 
+![Desktop tool library](docs/interface-light.png)
+
 **[Download the Windows app](https://github.com/cell849/tools/releases/latest)**
 
 On the release page, expand **Assets** and download **LocalPDFToolkit-Windows-x64.zip**.
@@ -139,3 +141,6 @@ AGPL/commercial dual-licensed; review its terms before distributing this app.
 - Output policy: originals remain unchanged, user-selected output directory,
   temporary outputs and no unapproved overwrite (implemented in M1).
 - AI policy: one agent by default; no model switching is implied by this repo.
+
+The v0.3 desktop UI uses an Apple-inspired tool library, category sidebar and focused
+workspaces. See docs/DESIGN.md for design decisions and keyboard shortcuts.

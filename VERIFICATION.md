@@ -156,3 +156,22 @@ Regression coverage includes eight new image tests and a search-selection test.
 GitHub Releases now offers a direct Windows ZIP; README links to latest release.
 Release publication is gated by Windows tests, packaging and the frozen-worker
 self-test. Repository visibility remains private.
+
+## v0.3.0 desktop interface
+
+Applied the user-installed Apple Design skill to an Apple-inspired Qt desktop
+library and workspace. Read the design foundations and desktop/component
+references; docs/DESIGN.md records the decisions and measured text contrast.
+No Apple font/symbol binaries are bundled. The local skill installation is
+ignored by Git because it is a development aid rather than an app dependency.
+
+All 28 converters remain registered. New UI includes category navigation,
+responsive tool cards, focused file/options/output panels, native menus,
+keyboard shortcuts, system light/dark palette changes and fixed progress/actions.
+Window controls remain native. Screenshots inspected at regular size and
+760x620; after layout settles there is no horizontal scroll or option-row overlap.
+The local full suite passed 147 tests; the final focused UI/worker/queue subset
+passed 15. Lint/format checks passed. Actual screen-reader, high-contrast Windows
+and large system text testing remain manual; no accessibility certification is
+claimed. The release workflow gates the Windows download on tests and a frozen
+conversion self-test.
