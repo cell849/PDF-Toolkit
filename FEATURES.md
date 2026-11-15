@@ -87,3 +87,19 @@ compression must disclose loss of selectable text and interactive content.
 
 OCR, redaction/editor/signing/scanning and remaining screenshot tools are deferred
 as documented in CAPABILITIES.md; no AI features are included.
+
+## Metadata cleaner expansion — user requested
+
+Add format-aware privacy tools with the existing desktop styling: image metadata,
+conservative editable PPTX cleaning (including embedded raster images), and a
+flattened PDF cleaner. Preserve originals; use neutral unique output names and
+safe output transactions. Unsupported payloads must fail rather than be declared
+clean. No universal “no personal data” guarantee is made. See docs/METADATA.md.
+
+Acceptance: synthetic EXIF/GPS/XMP/comment/author canaries removed; source bytes
+unchanged; containers parse; transparency/orientation/high-bit-depth samples
+verified; PPTX notes/comments/properties removed with slide content/geometry
+retained; unknown/active/complex media rejected; PDF source hidden objects not
+copied; reports contain no source personal values; cancellation and collisions
+leave no partial output. New tools share the Privacy sidebar category and
+integrated report viewer.

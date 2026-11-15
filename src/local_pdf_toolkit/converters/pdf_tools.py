@@ -97,7 +97,7 @@ OPERATIONS = {
             ),
         ),
     ),
-    "remove_metadata": ("Remove PDF metadata", ()),
+    "remove_metadata": ("Remove PDF properties (basic)", ()),
     "flatten": ("Flatten PDF annotations and forms", ()),
     "protect": (
         "Protect PDF with password",

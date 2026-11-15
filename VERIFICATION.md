@@ -183,3 +183,27 @@ self-test passed. Windows and Ubuntu matrix checks also passed. The initial
 Windows UI regression exposed 13 px of compact overflow; automatic sidebar
 collapse fixed it without weakening the no-overflow assertion. Native manual
 Windows 11 visual/accessibility verification is still outstanding.
+
+## v0.4.0 format-aware metadata tools
+
+The user requested metadata removal with images/PPTX as priorities. Added a
+Privacy category with same-format image rebuilding, conservative editable PPTX
+cleaning including raster media, and PDF page-image rebuilding. All clean outputs
+use neutral unique names and include an in-app policy/limits report. The reports
+contain no original private values or filenames. Unsupported formats/containers
+are rejected; no “any file” or anonymity guarantee is made.
+
+Local integrated suite passed 186 tests before the additional PPTX neutral-label
+regression. Focused tests cover EXIF/GPS/XMP/comments, metadata-bearing image
+containers, high-bit-depth pixel preservation, source hashes/bytes, ZIP fields,
+author/notes/comment/thumbnail removal, media/relationship neutralization,
+unsupported structures, rollback/cancellation/collisions, hidden PDF objects and
+the report viewer. PPTX parser checks preserve visible slide text/geometry in
+synthetic fixtures; PDF rendered samples compare equal at selected resolution.
+Screenshots inspected; existing desktop style retained. Formatting/lint pass.
+
+Image/PPTX agents were interrupted by a usage limit; the main agent reviewed
+and completed their partial files and added integration/PDF/PPTX tests. No agent
+report was treated as completion evidence. Native/manual Office fidelity,
+external format coverage and personal content anonymization remain limitations;
+see docs/METADATA.md. Original files are never changed or deleted.

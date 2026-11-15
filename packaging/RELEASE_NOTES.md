@@ -1,15 +1,17 @@
-A redesigned desktop interface inspired by Apple's clean hierarchy and spacing:
+Adds a **Privacy** category in the same desktop style:
 
-- Searchable tool cards and category sidebar.
-- Focused file, options and output workspace.
-- System light/dark appearance, rounded surfaces and visible keyboard focus.
-- Resizable layouts, keyboard shortcuts, native Windows window controls.
-- All 28 local document/image tools retained.
+- Clean metadata from JPEG/PNG/WebP/TIFF/BMP/single-frame GIF.
+- Clean supported editable PPTX properties, notes/comments, ZIP fields, and embedded raster images.
+- Rebuild PDF pages into a fresh flattened PDF without original hidden objects/attachments.
+- Neutral unique output filenames and in-app cleaning reports. Originals are preserved.
 
-Download **LocalPDFToolkit-Windows-x64.zip** under Assets, extract once, and run
+Image cleaning re-encodes JPEG and removes ICC profiles; color appearance can
+change. PPTX notes/comments are deleted in the copy; complex/linked/active
+packages are rejected. The stronger PDF cleaner removes selectable text and
+vector/editable structure. See docs/METADATA.md for exact scope and exclusions.
+Visible personal content and filesystem metadata can remain. No file is labeled
+anonymous, and unsupported formats are not silently passed through.
+
+Download **LocalPDFToolkit-Windows-x64.zip**, extract once, and open
 **LocalPDFToolkit/LocalPDFToolkit.exe**. Keep `_internal` beside it.
-No Python installation or terminal commands are needed.
-
-LibreOffice is separately required for Office-to-PDF. The app remains a private,
-unsigned personal-use build. Windows desktop accessibility/manual testing is
-still needed; automated conversion tests and the packaged self-test gate release.
+This remains a private unsigned personal-use build.

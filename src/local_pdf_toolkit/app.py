@@ -1,4 +1,4 @@
-"""Desktop entry point with the M1 PDF-to-image adapters."""
+"""Desktop entry point and trusted local tool registration."""
 
 import multiprocessing
 import sys
@@ -13,10 +13,13 @@ from local_pdf_toolkit.ui.main_window import MainWindow
 
 def build_registry():
     from local_pdf_toolkit.converters.compress import PdfCompressConverter
+    from local_pdf_toolkit.converters.image_metadata import ImageMetadataConverter
     from local_pdf_toolkit.converters.images import image_converters
     from local_pdf_toolkit.converters.office_pdf import office_converters
+    from local_pdf_toolkit.converters.pdf_metadata import PdfMetadataConverter
     from local_pdf_toolkit.converters.pdf_office import pdf_office_converters
     from local_pdf_toolkit.converters.pdf_tools import pdf_tool_converters
+    from local_pdf_toolkit.converters.pptx_metadata import PptxMetadataConverter
 
     registry = ConverterRegistry()
     converters = [PdfImagesConverter(fmt) for fmt in (FileFormat.JPEG, FileFormat.PNG)]
@@ -25,6 +28,7 @@ def build_registry():
     converters.append(PdfCompressConverter())
     converters.extend(office_converters())
     converters.extend(pdf_office_converters())
+    converters.extend((ImageMetadataConverter(), PptxMetadataConverter(), PdfMetadataConverter()))
     for converter in converters:
         registry.register(converter)
     return registry
@@ -38,7 +42,7 @@ def main() -> int:
         return self_test()
     app = QApplication(sys.argv)
     app.setApplicationName("Local PDF Toolkit")
-    app.setApplicationVersion("0.3.0")
+    app.setApplicationVersion("0.4.0")
     window = MainWindow(build_registry())
     window.show()
     return app.exec()

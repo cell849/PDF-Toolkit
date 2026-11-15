@@ -22,11 +22,22 @@ from PySide6.QtWidgets import (
 
 from local_pdf_toolkit.ui.design import apply_theme
 
-CATEGORIES = ("All tools", "Convert PDFs", "Images", "Organize", "Optimize", "Office", "Security")
+CATEGORIES = (
+    "All tools",
+    "Convert PDFs",
+    "Images",
+    "Organize",
+    "Optimize",
+    "Office",
+    "Privacy",
+    "Security",
+)
 
 
 def category(spec):
     operation = spec.operation_id
+    if operation.startswith("metadata."):
+        return "Privacy"
     if operation == "pdf.compress":
         return "Optimize"
     if operation in ("pdf.protect", "pdf.unlock", "pdf.remove_metadata"):
@@ -89,7 +100,12 @@ class ToolLibrary(QWidget):
             card.setToolTip(" ".join(spec.limitations) or f"Open {spec.label}")
             content = QVBoxLayout(card)
             content.setContentsMargins(18, 18, 18, 18)
-            badge = label(spec.output_formats[0].value.upper(), "badge")
+            badge = label(
+                "META"
+                if spec.operation_id.startswith("metadata.")
+                else spec.output_formats[0].value.upper(),
+                "badge",
+            )
             badge.setMaximumWidth(74)
             content.addWidget(badge, alignment=Qt.AlignmentFlag.AlignLeft)
             title = label(spec.label.replace(" / resize / compress", ""), "section")
@@ -241,7 +257,8 @@ def build_window(w):
     files_layout.addLayout(file_actions)
     body_layout.addWidget(files_panel)
     options_panel, options_layout = panel()
-    options_layout.addWidget(label("Options", "section"))
+    w.options_heading = label("Options", "section")
+    options_layout.addWidget(w.options_heading)
     w.options_widget = QWidget()
     w.options_widget.setObjectName("options")
     w.form = QFormLayout(w.options_widget)
@@ -264,7 +281,14 @@ def build_window(w):
     output_row.addWidget(w.browse)
     output_layout.addLayout(output_row)
     w.open_button = button("Open output folder", w._open_directory)
-    output_layout.addWidget(w.open_button, alignment=Qt.AlignmentFlag.AlignLeft)
+    output_actions = QHBoxLayout()
+    output_actions.addWidget(w.open_button)
+    w.report_button = button("View cleaning report", w._open_report)
+    w.report_button.setEnabled(False)
+    w.report_button.hide()
+    output_actions.addWidget(w.report_button)
+    output_actions.addStretch()
+    output_layout.addLayout(output_actions)
     body_layout.addWidget(output_panel)
     body_layout.addStretch()
     scroll = QScrollArea()
@@ -364,6 +388,7 @@ def add_menus(w):
         ("Retry failed", w._retry),
         ("Cancel selected", w._cancel_one),
         ("Open output folder", w._open_directory),
+        ("View cleaning report", w._open_report),
     ):
         action = QAction(title, w)
         action.triggered.connect(callback)

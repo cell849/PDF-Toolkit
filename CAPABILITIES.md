@@ -46,3 +46,12 @@ repair guarantees, document comparison, scanner/camera hardware and ZIP imports.
 These need dedicated interfaces, dependencies or correctness work; the app does
 not show them as working tools. Additional reverse conversions are considered
 individually because PDF usually lacks the source document's structure.
+
+## Privacy tools — v0.4.0
+
+Three additional tools (31 total) clean images, supported editable PowerPoint
+presentations and flattened PDFs. The supported formats, destructive effects,
+verification boundaries and exclusions are in docs/METADATA.md. This is metadata
+cleaning rather than a universal anonymizer. The app lists limitations before
+running and includes a report viewer; raw private metadata is never copied into
+reports. Originals remain unchanged.

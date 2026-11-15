@@ -79,3 +79,61 @@ def test_library_cards_categories_and_compact_workspace(qapp):
         assert window.pages.currentWidget() == window.dashboard
     finally:
         window.close()
+
+
+def test_privacy_tools_share_native_workspace_and_report(qapp, tmp_path):
+    import json
+
+    from PySide6.QtCore import QTimer
+    from PySide6.QtWidgets import QDialog, QPlainTextEdit
+
+    from local_pdf_toolkit.ui.shell import CATEGORIES
+
+    window = MainWindow(build_registry())
+    window.show()
+    try:
+        window.navigation.setCurrentRow(CATEGORIES.index("Privacy"))
+        visible = [
+            spec
+            for index, spec in enumerate(window._operations)
+            if not window.operation_list.item(index).isHidden()
+        ]
+        assert {spec.operation_id for spec in visible} == {
+            "metadata.clean_image",
+            "metadata.clean_pptx",
+            "metadata.clean_pdf",
+        }
+        window._select_tool(
+            next(
+                index
+                for index, spec in enumerate(window._operations)
+                if spec.operation_id == "metadata.clean_image"
+            )
+        )
+        assert window.report_button.isVisible()
+        assert window.options_heading.text() == "Cleaning policy"
+        report = tmp_path / "clean.report.json"
+        report.write_text(
+            json.dumps(
+                {
+                    "policy": "Pixels rebuilt",
+                    "policy_categories": ["EXIF/GPS"],
+                    "limits": "Visible text remains",
+                }
+            )
+        )
+        window._results[0] = (report,)
+        observed = []
+
+        def read_and_close():
+            for dialog in window.findChildren(QDialog):
+                text = dialog.findChild(QPlainTextEdit)
+                observed.append(text.toPlainText())
+                dialog.accept()
+
+        QTimer.singleShot(30, read_and_close)
+        window._open_report()
+        assert len(observed) == 1
+        assert "EXIF/GPS" in observed[0] and "Visible text remains" in observed[0]
+    finally:
+        window.close()

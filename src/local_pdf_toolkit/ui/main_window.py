@@ -63,6 +63,59 @@ class MainWindow(QMainWindow):
             )
             self.form.setRowWrapPolicy(policy)
 
+    def _open_report(self):
+        import json
+
+        from PySide6.QtWidgets import QDialog, QPlainTextEdit, QVBoxLayout
+
+        selected = self.files.currentRow()
+        candidates = [selected] if selected >= 0 else list(reversed(self._results))
+        report_path = next(
+            (
+                path
+                for index in candidates
+                for path in self._results.get(index, ())
+                if path.name.endswith(".report.json")
+            ),
+            None,
+        )
+        if report_path is None:
+            self.statusBar().showMessage(
+                "Choose a completed metadata-cleaning job to view its report."
+            )
+            return
+        try:
+            if report_path.stat().st_size > 65536:
+                raise ValueError("Report too large")
+            report = json.loads(report_path.read_text(encoding="utf-8"))
+            if not isinstance(report, dict):
+                raise ValueError("Invalid report")
+            categories = report.get("policy_categories", report.get("removed_categories", []))
+            lines = [
+                "CLEANING POLICY",
+                str(report.get("policy", "")),
+                "",
+                *["• " + str(value) for value in categories],
+                "",
+                "IMPORTANT LIMITS",
+                str(report.get("limits", "")),
+            ]
+        except (OSError, ValueError, TypeError):
+            self.statusBar().showMessage(
+                "Could not read the cleaning report. Check the output folder."
+            )
+            return
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Cleaning report")
+        dialog.resize(620, 430)
+        layout = QVBoxLayout(dialog)
+        text = QPlainTextEdit()
+        text.setReadOnly(True)
+        text.setPlainText("\n".join(lines))
+        text.setAccessibleName("Cleaning policy and limitations")
+        layout.addWidget(text)
+        dialog.exec()
+
     def _appearance_changed(self, *_):
         from local_pdf_toolkit.ui.design import apply_theme
 
@@ -90,12 +143,22 @@ class MainWindow(QMainWindow):
             self.notice.clear()
             return
         spec = self._operations[index]
+        privacy = spec.operation_id.startswith("metadata.")
+        self.options_heading.setText(
+            "Cleaning policy" if privacy and not spec.options else "Options"
+        )
+        self.report_button.setVisible(privacy)
+        self.report_button.setEnabled(any(self._results.values()))
         self.tool_title.setText(spec.label.replace(" / resize / compress", ""))
         self.tool_hint.setText(
             "Files are combined in the order below."
             if spec.input_mode == "multiple"
             else "Each file is processed separately. Originals stay untouched."
         )
+        if privacy:
+            self.tool_hint.setText(
+                "Creates a clean copy and a report. Visible personal content can remain."
+            )
         for option in spec.options:
             if option.choices:
                 widget = QComboBox()
@@ -170,6 +233,7 @@ class MainWindow(QMainWindow):
         self.files.clear()
         self._failed.clear()
         self._results.clear()
+        self.report_button.setEnabled(False)
         self._sync_files()
 
     def _choose_directory(self):
@@ -245,6 +309,7 @@ class MainWindow(QMainWindow):
         self._set_active(True)
         for index in indices:
             self._results.pop(index, None)
+            self.report_button.setEnabled(False)
             self.files.item(index).setText(f"Queued — {self._paths[index].name}")
         self._next()
 
@@ -285,6 +350,7 @@ class MainWindow(QMainWindow):
                 self._results[index] = tuple(paths)
             self.files.item(index).setText(message)
             self.files.item(index).setToolTip(message + "\n" + "\n".join(map(str, paths)))
+        self.report_button.setEnabled(any(self._results.values()))
         QTimer.singleShot(0, self._next)
 
     def _cancel(self):
