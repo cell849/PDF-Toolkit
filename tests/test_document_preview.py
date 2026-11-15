@@ -1,4 +1,5 @@
 import json
+import time
 import wave
 from pathlib import Path
 
@@ -138,6 +139,7 @@ def preview(qapp, monkeypatch):
 
 
 def finish_page(widget, color="white", size=(400, 500), **extra):
+    assert widget.jobs.running, "A preview worker must start before completing it."
     folder = Path(widget._temp.name)
     image = folder / "page.png"
     info = folder / "page.json"
@@ -160,19 +162,26 @@ def finish_page(widget, color="white", size=(400, 500), **extra):
     QApplication.processEvents()
 
 
+def wait_for_render(widget, count):
+    deadline = time.monotonic() + 3
+    while len(widget.jobs.started) < count and time.monotonic() < deadline:
+        QTest.qWait(10)
+    assert len(widget.jobs.started) == count and widget.jobs.running
+
+
 def test_preview_is_lazy_debounced_and_rejects_old_selection(preview, tmp_path):
     one, two = tmp_path / "one.pdf", tmp_path / "two.pdf"
     preview.set_document(one)
     assert not preview.jobs.started
     preview.set_document(two)
-    QTest.qWait(180)
+    wait_for_render(preview, 1)
     assert len(preview.jobs.started) == 1
     assert preview.jobs.started[0][0] == two
     preview.set_document(one)
     assert preview.jobs.cancelled
     finish_page(preview, color="red")
     assert preview.canvas._image_rect.isEmpty()
-    QTest.qWait(180)
+    wait_for_render(preview, 2)
     assert preview.jobs.started[-1][0] == one
     finish_page(preview)
     assert not preview.canvas._image_rect.isEmpty()
@@ -190,14 +199,14 @@ def test_original_result_stale_compare_and_matching_geometry_preserves_view(prev
     preview.compare_requested.connect(lambda: compared.append(True))
     preview.compare_button.click()
     assert compared == [True]
-    QTest.qWait(180)
+    wait_for_render(preview, 1)
     finish_page(preview)
     preview.canvas.set_zoom(2)
     QTest.qWait(10)  # Let Qt lay out the scrollbars before the next user action.
     preview.canvas.centerOn(260, 330)
     old = preview.canvas.view_state()
     preview.tabs.setCurrentIndex(1)
-    QTest.qWait(180)
+    wait_for_render(preview, 2)
     assert preview.jobs.started[-1][0] == result
     finish_page(preview, color="blue")
     current = preview.canvas.view_state()
@@ -210,7 +219,7 @@ def test_original_result_stale_compare_and_matching_geometry_preserves_view(prev
 
 def test_shutdown_waits_for_worker_before_removing_temp(preview, tmp_path):
     preview.set_document(tmp_path / "source.pdf")
-    QTest.qWait(180)
+    wait_for_render(preview, 1)
     folder = Path(preview._temp.name)
     marker = folder / "worker-owned"
     marker.write_text("still in use")
@@ -225,7 +234,7 @@ def test_shutdown_waits_for_worker_before_removing_temp(preview, tmp_path):
 
 def test_clear_during_worker_preserves_temporary_files_until_exit(preview, tmp_path):
     preview.set_document(tmp_path / "source.pdf")
-    QTest.qWait(180)
+    wait_for_render(preview, 1)
     marker = Path(preview._temp.name) / "worker-owned"
     marker.write_text("in use")
     preview.clear()
@@ -244,7 +253,7 @@ def test_busy_defers_debounce_and_resumes_only_latest_selection(preview, tmp_pat
     QTest.qWait(180)
     assert not preview.jobs.started
     assert preview.set_busy(False)
-    QTest.qWait(180)
+    wait_for_render(preview, 1)
     assert len(preview.jobs.started) == 1
     assert preview.jobs.started[0][0] == tmp_path / "latest.pdf"
     finish_page(preview)
@@ -256,11 +265,11 @@ def test_busy_defers_debounce_and_resumes_only_latest_selection(preview, tmp_pat
 
 def test_busy_cancels_active_render_and_preserves_pixels_and_cache(preview, tmp_path):
     preview.set_document(tmp_path / "source.pdf")
-    QTest.qWait(180)
+    wait_for_render(preview, 1)
     finish_page(preview, color="red")
     shown = preview.canvas.scene().items()[0].pixmap().cacheKey()
     preview.page.setValue(2)
-    QTest.qWait(180)
+    wait_for_render(preview, 2)
     assert preview.canvas.scene().items()[0].pixmap().cacheKey() == shown
     marker = Path(preview._temp.name) / "worker-owned"
     marker.write_text("in use")
@@ -274,7 +283,7 @@ def test_busy_cancels_active_render_and_preserves_pixels_and_cache(preview, tmp_
     QTest.qWait(180)
     assert len(preview.jobs.started) == 2
     assert preview.set_busy(False)
-    QTest.qWait(180)
+    wait_for_render(preview, 3)
     assert len(preview.jobs.started) == 3
     assert preview.jobs.started[-1][2] == {"page": 3}
     finish_page(preview, color="green")
@@ -283,14 +292,14 @@ def test_busy_cancels_active_render_and_preserves_pixels_and_cache(preview, tmp_
 
 def test_busy_resume_waits_for_cancelled_worker_exit(preview, tmp_path):
     preview.set_document(tmp_path / "first.pdf")
-    QTest.qWait(180)
+    wait_for_render(preview, 1)
     assert not preview.set_busy(True)
     preview.set_document(tmp_path / "latest.pdf")
     assert not preview.set_busy(False)
     QTest.qWait(180)
     assert len(preview.jobs.started) == 1
     preview.jobs.complete(error=("cancelled", "Cancelled"))
-    QTest.qWait(180)
+    wait_for_render(preview, 2)
     assert len(preview.jobs.started) == 2
     assert preview.jobs.started[-1][0] == tmp_path / "latest.pdf"
     assert not preview.shutdown()
