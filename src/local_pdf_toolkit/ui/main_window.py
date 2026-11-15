@@ -46,6 +46,13 @@ class MainWindow(QMainWindow):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        compact = self.width() < 980
+        if hasattr(self, "sidebar") and compact != getattr(self, "_compact", False):
+            self._compact = compact
+            self.sidebar.setVisible(not compact)
+            self.sidebar_action.blockSignals(True)
+            self.sidebar_action.setChecked(not compact)
+            self.sidebar_action.blockSignals(False)
         if hasattr(self, "form"):
             from PySide6.QtWidgets import QFormLayout
 

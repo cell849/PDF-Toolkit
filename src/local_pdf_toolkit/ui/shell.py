@@ -350,6 +350,7 @@ def add_menus(w):
     library.triggered.connect(w._show_library)
     view_menu.addAction(library)
     sidebar_action = QAction("Show sidebar", w)
+    w.sidebar_action = sidebar_action
     sidebar_action.setCheckable(True)
     sidebar_action.setChecked(True)
     sidebar_action.setShortcut("Ctrl+B")

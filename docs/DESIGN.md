@@ -22,7 +22,8 @@ changes select the palette. Higher contrast OS settings, screen readers and
 Windows text scaling require real Windows accessibility verification.
 
 Regular: category sidebar | searchable 3-column library → focused workspace.
-Compact (760×620): resizable/hideable sidebar | 1-column library; workspace form
+Compact (760×620): sidebar automatically collapses (View can restore it);
+1–2-column library; workspace form
 labels wrap above fields, file actions wrap, body scrolls while feedback/actions
 remain fixed. Ctrl+O imports, Ctrl+F searches, Ctrl+Return runs; Alt+Left returns
 to the library and Ctrl+B toggles the sidebar. Menus expose tools and queue actions.
