@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "local-pdf-toolkit"
-version = "0.6.0"
+version = "0.7.0"
 description = "A Windows-first, offline desktop PDF toolkit (local document and image tools)."
 readme = "README.md"
 requires-python = ">=3.13"
@@ -38,3 +38,6 @@ source_paths = ["src/local_pdf_toolkit"]
 only_mutate = ["src/local_pdf_toolkit/core/output.py"]
 pytest_add_cli_args_test_selection = ["tests/quality_properties"]
 also_copy = ["tests"]
+
+[tool.setuptools.package-data]
+local_pdf_toolkit = ["ui/assets/icons/*"]

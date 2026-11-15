@@ -62,3 +62,17 @@ def test_converter():
 @pytest.fixture
 def fixture_dir() -> Path:
     return Path(__file__).parent / "fixtures"
+
+
+@pytest.fixture(autouse=True)
+def isolated_desktop_preferences(tmp_path):
+    """Never read or overwrite a developer's real window/unit preferences."""
+    from PySide6.QtCore import QSettings
+
+    previous = QSettings.defaultFormat()
+    QSettings.setDefaultFormat(QSettings.Format.IniFormat)
+    QSettings.setPath(
+        QSettings.Format.IniFormat, QSettings.Scope.UserScope, str(tmp_path / "settings")
+    )
+    yield
+    QSettings.setDefaultFormat(previous)

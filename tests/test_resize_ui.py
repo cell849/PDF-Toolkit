@@ -27,8 +27,13 @@ def test_dpi_accepts_precise_typing_and_only_slider_snaps(qapp):
         QTest.keyClick(control.number, Qt.Key.Key_Return)
         assert window._editors["dpi"]() == 276
         assert control.slider.value() == 276
+        control.slider.setSliderDown(True)
         control.slider.setValue(298)
+        control.slider.setSliderDown(False)
         assert window._editors["dpi"]() == 300
+        control.slider.setFocus()
+        QTest.keyClick(control.slider, Qt.Key.Key_Right)
+        assert window._editors["dpi"]() == 301
         control.number.selectAll()
         QTest.keyClicks(control.number, "298")
         QTest.keyClick(control.number, Qt.Key.Key_Return)
@@ -71,6 +76,8 @@ def test_comparison_uses_selected_source_and_excludes_json_reports(qapp, tmp_pat
     window = MainWindow(build_registry())
     a, b = tmp_path / "a.png", tmp_path / "b.png"
     output = tmp_path / "b.jpg"
+    Image.new("RGB", (10, 10), "red").save(a)
+    Image.new("RGB", (10, 10), "blue").save(b)
     try:
         window.add_paths((a, b))
         window._results = {0: (tmp_path / "a.report.json",), 1: (output, tmp_path / "b.json")}

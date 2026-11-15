@@ -123,6 +123,20 @@ def test_close_during_conversion_cancels_and_waits(qapp, fixture_dir, tmp_path):
     window.destination.setText(str(tmp_path))
     window.show()
 
+    inspection = QEventLoop()
+
+    def inspected():
+        if all(path in window._records for path in window._paths):
+            inspection.quit()
+
+    pulse = QTimer()
+    pulse.timeout.connect(inspected)
+    pulse.start(10)
+    QTimer.singleShot(15000, inspection.quit)
+    inspection.exec()
+    pulse.stop()
+    assert all(path in window._records for path in window._paths)
+
     def start_and_close():
         window._start()
         window.close()

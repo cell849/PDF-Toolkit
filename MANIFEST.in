@@ -4,4 +4,8 @@ recursive-include .github *.yml
 
 include CAPABILITIES.md
 recursive-include benchmarks *.py *.json
-recursive-include packaging *.py *.ps1 *.md
+recursive-include packaging *.py *.ps1 *.md *.txt
+
+recursive-include quality *.py *.ps1 *.md *.json
+prune quality/results
+prune quality/fuzz-failures

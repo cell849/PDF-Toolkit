@@ -84,3 +84,19 @@ Custom PDF render/compress DPI accepts 10–1200 within the 40 MP guard. Image a
 size targets accept editable KB/MB/KiB/MiB amounts or percent to keep of original
 bytes; preserving resolution is default. Image percentage resizing and explicit
 size-driven downscaling are available. Before/after previews render on demand.
+
+## v0.7.0 workspace
+
+The same 40 registered tools now share a document workspace: content-verified file
+inspection, embedded Original/Result preview, visible result feedback, compatible
+input carryover and session-only per-tool context. Settings changes mark old
+results as previous runs. File removal/reorder can be undone; paste and whole-window
+drag are supported. Output names are optional and never overwrite existing files.
+Window geometry, split sizes, unit preference and text size may persist; document
+paths/content and tool recipes do not. Availability checks locate optional local
+engines without downloading them. Views support system appearance and larger text.
+
+The EXE has an original icon and version information. Authenticode signing can be
+requested by the local build script using an already-provisioned trusted certificate
+thumbprint. No identity was supplied for this release, so SmartScreen warnings
+remain possible. The checksum is not a signature or a reputation guarantee.

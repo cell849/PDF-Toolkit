@@ -140,3 +140,14 @@ resolution reduction and on-demand before/after comparison. Preserve resolution
 is the chosen default. User subsequently authorized pushing and publishing only
 after changes and local verification, followed by Windows Actions tests/package.
 This supersedes the earlier local-only restriction for this release.
+
+## v0.7.0 — user-authorized complete UX pass
+
+Implement the proposed document workspace, feedback/compatibility corrections,
+embedded preview and result comparison, consistent native controls, app identity,
+contextual actions, session document/tool context, undo/paste/drop, output naming,
+readable summaries and help, harmless preferences, availability and accessible
+layout/text scaling. Keep conversion capabilities, fidelity and offline operation.
+User authorized Windows testing and publication after integration. User confirmed
+there is no trusted signing certificate/account; do not bypass Windows protections
+or claim the unsigned release removes SmartScreen warnings.

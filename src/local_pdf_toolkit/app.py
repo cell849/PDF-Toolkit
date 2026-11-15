@@ -3,12 +3,9 @@
 import multiprocessing
 import sys
 
-from PySide6.QtWidgets import QApplication
-
 from local_pdf_toolkit.converters.pdf_images import PdfImagesConverter
 from local_pdf_toolkit.core.formats import FileFormat
 from local_pdf_toolkit.core.registry import ConverterRegistry
-from local_pdf_toolkit.ui.main_window import MainWindow
 
 
 def build_registry():
@@ -60,9 +57,19 @@ def main() -> int:
         from local_pdf_toolkit.diagnostics import self_test
 
         return self_test()
+    from PySide6.QtWidgets import QApplication
+    from local_pdf_toolkit.ui.main_window import MainWindow
+
+    if sys.platform == "win32":
+        import ctypes
+
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("LocalPDFToolkit.Desktop")
     app = QApplication(sys.argv)
+    from local_pdf_toolkit.ui.icons import app_icon
+
+    app.setWindowIcon(app_icon())
     app.setApplicationName("Local PDF Toolkit")
-    app.setApplicationVersion("0.6.0")
+    app.setApplicationVersion("0.7.0")
     window = MainWindow(build_registry())
     window.show()
     return app.exec()

@@ -8,19 +8,19 @@ from pathlib import Path
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPen, QPixmap
 from PySide6.QtWidgets import (
-    QComboBox,
     QDialog,
     QGraphicsScene,
     QGraphicsView,
     QHBoxLayout,
     QLabel,
     QPushButton,
-    QSpinBox,
     QVBoxLayout,
 )
 
 from local_pdf_toolkit.converters.preview import PreviewConverter
 from local_pdf_toolkit.core.jobs import JobController
+from local_pdf_toolkit.ui.controls import ChoiceBox as QComboBox
+from local_pdf_toolkit.ui.controls import NumericSpinBox as QSpinBox
 
 
 class PageCanvas(QGraphicsView):

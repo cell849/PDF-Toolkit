@@ -67,3 +67,25 @@ The private repository still requires GitHub sign-in.
 To publish a new private release, manually run Windows package with a new
 `release_tag` such as `v0.2.1`. A release is created only after tests, packaging
 and the frozen-worker smoke check pass; existing releases are not overwritten.
+
+## v0.7.0 identity and signing
+
+The build embeds the original app ICO and product/version resources and includes
+SVG/ICO/PNG UI artwork. Its self-test renders the real workspace, verifies bundled
+artwork and performs a spawned conversion. A ZIP SHA-256 checksum is generated.
+
+No trusted signing identity was provided. The package is unsigned; SmartScreen
+or Smart App Control may warn/block according to the machine's policy. Neither
+an app icon, version metadata, a self-signed certificate nor a checksum establishes
+trusted publisher identity. Do not disable Windows protections as a build step.
+
+For a future already-provisioned trusted Windows certificate, place SignTool on
+PATH and pass `-SigningThumbprint <certificate-thumbprint>` to build_windows.ps1
+(or set WINDOWS_SIGNING_THUMBPRINT). The script signs using SHA-256, requests an
+RFC3161 timestamp, verifies Authenticode trust and only then creates the ZIP. A
+requested but failed/untrusted signature stops the build. It never creates a
+certificate, purchases a service or logs a private key. Hosted runners need their
+own approved signing provisioning; this optional hook alone does not install it.
+Signing can improve publisher identification but does not guarantee immediate
+SmartScreen reputation. See Microsoft's current guidance:
+https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation

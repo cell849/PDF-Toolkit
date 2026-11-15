@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QProgressBar,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QSplitter,
     QStackedWidget,
     QVBoxLayout,
@@ -57,6 +58,7 @@ def category(spec):
 
 def label(text, role=None):
     widget = QLabel(text)
+    widget.setTextFormat(Qt.TextFormat.PlainText)
     if role:
         widget.setObjectName(role)
     widget.setWordWrap(True)
@@ -79,6 +81,45 @@ def panel():
     layout.setContentsMargins(20, 20, 20, 20)
     layout.setSpacing(14)
     return frame, layout
+
+
+def tool_description(spec):
+    descriptions = {
+        "image.to_pdf": "Combine ordered images into a PDF",
+        "pdf.merge": "Join PDFs without rasterizing pages",
+        "pdf.split": "Save selected page ranges as separate PDFs",
+        "pdf.extract": "Save a copy of selected pages",
+        "pdf.reorder": "Change the page order in a new copy",
+        "pdf.delete": "Remove selected pages from a copy",
+        "pdf.crop": "Trim page margins; this does not redact content",
+        "pdf.rotate": "Turn selected pages",
+        "pdf.number": "Add visible page numbers",
+        "pdf.watermark": "Add a visible text watermark",
+        "pdf.protect": "Encrypt a PDF with a password",
+        "pdf.unlock": "Remove encryption using the correct password",
+        "pdf.flatten": "Make form and annotation appearances permanent",
+        "pdf.remove_metadata": "Remove PDF document properties",
+        "pdf.compress": "Reduce file size with clear quality controls",
+        "office.to_pdf": "Render local Office documents as PDFs",
+        "pdf.ocr": "Make scanned pages searchable using local OCR",
+        "pdf.redact": "Permanently mask areas and rebuild pages as images",
+        "pdf.to_docx": "Export selectable text into editable paragraphs",
+        "pdf.to_xlsx": "Export detected tables into a spreadsheet",
+        "pdf.to_pptx": "Export pages as image slides",
+        "metadata.inspect": "Compare detected fields without revealing private values",
+        "metadata.neutral_text": "Make a neutral-name copy; text contents remain",
+    }
+    if spec.operation_id in descriptions:
+        return descriptions[spec.operation_id]
+    if spec.operation_id.startswith("metadata.clean"):
+        return "Remove supported metadata from a separate copy"
+    if spec.operation_id.startswith("image.to_"):
+        return "Resize, convert and target a file size"
+    if spec.operation_id in ("pdf.to_jpeg", "pdf.to_png"):
+        return "Render PDF pages into images at your chosen resolution"
+    if spec.operation_id.startswith("pdf.to_"):
+        return "Export existing text from PDF pages"
+    return category(spec)
 
 
 class ToolLibrary(QWidget):
@@ -110,12 +151,14 @@ class ToolLibrary(QWidget):
             content.addWidget(badge, alignment=Qt.AlignmentFlag.AlignLeft)
             title = label(spec.label.replace(" / resize / compress", ""), "section")
             content.addWidget(title)
-            subtitle = (
-                "Resize, convert & target a file size"
-                if spec.operation_id.startswith("image.to_") and spec.operation_id != "image.to_pdf"
-                else category(spec)
-            )
+            subtitle = tool_description(spec)
+            card.setAccessibleDescription(subtitle)
             content.addWidget(label(subtitle, "muted"))
+            engine = required_engine(spec)
+            if engine:
+                dependency = label(f"Requires {engine}", "engineBadge")
+                dependency.setAccessibleName(f"Requires separately installed {engine}")
+                content.addWidget(dependency)
             for child in card.findChildren(QLabel):
                 child.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
             self.cards.append(card)
@@ -143,7 +186,7 @@ class ToolLibrary(QWidget):
 
 
 def build_window(w):
-    w.resize(1160, 850)
+    w.resize(1380, 860)
     w.setMinimumSize(760, 620)
     w._operations = w.registry.list_operations()
     w._category = "All tools"
@@ -152,6 +195,7 @@ def build_window(w):
     w.operation_list.addItems([spec.label for spec in w._operations])
     w.operation_list.hide()
     root = QSplitter()
+    w.library_splitter = root
     sidebar = QFrame()
     sidebar.setObjectName("sidebar")
     sidebar.setMinimumWidth(170)
@@ -175,12 +219,19 @@ def build_window(w):
     canvas = QWidget()
     canvas.setObjectName("canvas")
     outer = QVBoxLayout(canvas)
-    outer.setContentsMargins(28, 24, 28, 20)
-    outer.setSpacing(20)
+    outer.setContentsMargins(22, 20, 22, 16)
+    outer.setSpacing(16)
     bar = QHBoxLayout()
     w.back_button = button("‹  All tools", w._show_library)
     bar.addWidget(w.back_button)
     bar.addStretch()
+    w.settings_toggle = QPushButton("Options")
+    w.settings_toggle.setCheckable(True)
+    w.settings_toggle.setChecked(True)
+    w.settings_toggle.setAccessibleName("Show options and output")
+    w.settings_toggle.setToolTip("Show or hide options and output (Ctrl+Shift+B)")
+    w.settings_toggle.toggled.connect(lambda checked: w.settings_action.setChecked(checked))
+    bar.addWidget(w.settings_toggle)
     w.search = QLineEdit()
     w.search.setPlaceholderText("Search tools")
     w.search.setAccessibleName("Search tools")
@@ -215,99 +266,181 @@ def build_window(w):
     work.addWidget(w.tool_title)
     w.tool_hint = label("Add your files, choose your options, and save a new copy.", "muted")
     work.addWidget(w.tool_hint)
-    body = QWidget()
-    body_layout = QVBoxLayout(body)
-    body_layout.setContentsMargins(0, 0, 0, 0)
-    body_layout.setSpacing(18)
+    w.workspace_splitter = QSplitter(Qt.Orientation.Horizontal)
+    w.workspace_splitter.setObjectName("workspaceSplitter")
+    w.workspace_splitter.setChildrenCollapsible(False)
+    w.workspace_splitter.setHandleWidth(6)
     files_panel, files_layout = panel()
+    files_panel.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
+    files_layout.setContentsMargins(14, 16, 14, 16)
     row = QHBoxLayout()
     w.file_heading = label("Files", "section")
     row.addWidget(w.file_heading)
     row.addStretch()
-    w.add_button = button("Add files…", w._choose_files)
     w.clear_button = button("Clear", w._clear)
     row.addWidget(w.clear_button)
-    row.addWidget(w.add_button)
     files_layout.addLayout(row)
-    w.drop_hint = label(
-        "Drop documents here, or use Add files.\nOriginals are always preserved.", "muted"
-    )
+    w.add_button = button("Add files…", w._choose_files)
+    files_layout.addWidget(w.add_button)
+    w.drop_hint = label("Drop files here.\nOriginals are always preserved.", "muted")
     w.drop_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    w.drop_hint.setMinimumHeight(70)
-    files_layout.addWidget(w.drop_hint)
+    w.drop_hint.setMinimumHeight(110)
+    files_layout.addWidget(w.drop_hint, 1)
     w.files = QListWidget()
     w.files.setAccessibleName("Input files, order and job results")
     w.files.setMinimumHeight(100)
-    w.files.setMaximumHeight(190)
     w.files.setTextElideMode(Qt.TextElideMode.ElideMiddle)
+    w.files.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
     w.files.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
     w.files.itemDoubleClicked.connect(w._open_result)
     w.files.currentRowChanged.connect(w._sync_comparison)
     w.files.hide()
-    files_layout.addWidget(w.files)
+    files_layout.addWidget(w.files, 1)
+    w.preview_button = button("Preview selected", w._open_preview)
+    w.preview_button.setToolTip("Show the selected document in the preview pane")
+    files_layout.insertWidget(2, w.preview_button)
     file_actions = QGridLayout()
+    file_actions.setSpacing(6)
     w.up_button = button("Move up", lambda: w._move(-1))
     w.down_button = button("Move down", lambda: w._move(1))
     w.remove_button = button("Remove", w._remove)
-    w.retry_button = button("Retry failed", w._retry)
     w.cancel_selected = button("Cancel selected", w._cancel_one)
-    w.preview_button = button("Preview selected", w._open_preview)
-    for index, control in enumerate(
-        (
-            w.up_button,
-            w.down_button,
-            w.remove_button,
-            w.retry_button,
-            w.cancel_selected,
-            w.preview_button,
-        )
-    ):
-        file_actions.addWidget(control, index // 3, index % 3)
+    file_actions.addWidget(w.up_button, 0, 0)
+    file_actions.addWidget(w.down_button, 0, 1)
+    file_actions.addWidget(w.remove_button, 1, 0, 1, 2)
+    file_actions.addWidget(w.cancel_selected, 2, 0, 1, 2)
     files_layout.addLayout(file_actions)
-    body_layout.addWidget(files_panel)
+    w.files_scroll = QScrollArea()
+    w.files_scroll.setWidgetResizable(True)
+    w.files_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    w.files_scroll.setMinimumWidth(180)
+    w.files_scroll.setWidget(files_panel)
+    w.workspace_splitter.addWidget(w.files_scroll)
+    w.preview_host = QWidget()
+    w.preview_host.setObjectName("previewHost")
+    w.preview_host.setMinimumWidth(220)
+    preview_layout = QVBoxLayout(w.preview_host)
+    preview_layout.setContentsMargins(0, 0, 0, 0)
+    preview_layout.setSpacing(0)
+    w.workspace_splitter.addWidget(w.preview_host)
+    w.settings_panel = QWidget()
+    w.settings_panel.setObjectName("settingsPanel")
+    settings = QVBoxLayout(w.settings_panel)
+    settings.setContentsMargins(0, 0, 0, 0)
+    settings.setSpacing(14)
     options_panel, options_layout = panel()
+    options_layout.setContentsMargins(16, 18, 16, 18)
     w.options_heading = label("Options", "section")
     options_layout.addWidget(w.options_heading)
     w.options_widget = QWidget()
     w.options_widget.setObjectName("options")
-    w.form = QFormLayout(w.options_widget)
+    options_body = QVBoxLayout(w.options_widget)
+    options_body.setContentsMargins(0, 0, 0, 0)
+    options_body.setSpacing(12)
+    basic = QWidget()
+    basic.setObjectName("options")
+    w.form = QFormLayout(basic)
     w.form.setContentsMargins(0, 0, 0, 0)
     w.form.setSpacing(10)
-    w.form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+    w.form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
     w.form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+    options_body.addWidget(basic)
+    w.advanced_toggle = QPushButton("▸ Advanced options")
+    w.advanced_toggle.setCheckable(True)
+    w.advanced_toggle.setObjectName("disclosure")
+    w.advanced_toggle.setAccessibleName("Show advanced options")
+    options_body.addWidget(w.advanced_toggle)
+    w.advanced_widget = QWidget()
+    w.advanced_widget.setObjectName("options")
+    w.advanced_form = QFormLayout(w.advanced_widget)
+    w.advanced_form.setContentsMargins(0, 0, 0, 0)
+    w.advanced_form.setSpacing(10)
+    w.advanced_form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
+    w.advanced_form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+    w.advanced_widget.hide()
+    w.advanced_toggle.toggled.connect(w.advanced_widget.setVisible)
+    w.advanced_toggle.toggled.connect(
+        lambda expanded: w.advanced_toggle.setText(
+            "▾ Advanced options" if expanded else "▸ Advanced options"
+        )
+    )
+    w.advanced_toggle.toggled.connect(
+        lambda expanded: w.advanced_toggle.setAccessibleName(
+            "Hide advanced options" if expanded else "Show advanced options"
+        )
+    )
+    options_body.addWidget(w.advanced_widget)
     options_layout.addWidget(w.options_widget)
     w.notice = label("", "muted")
     options_layout.addWidget(w.notice)
-    body_layout.addWidget(options_panel)
+    settings.addWidget(options_panel)
     output_panel, output_layout = panel()
+    output_layout.setContentsMargins(16, 18, 16, 18)
     output_layout.addWidget(label("Save a new copy", "section"))
-    output_row = QHBoxLayout()
     w.destination = QLineEdit()
     w.destination.setPlaceholderText("Choose an output folder")
     w.destination.setAccessibleName("Output folder")
-    w.browse = button("Choose…", w._choose_directory)
-    output_row.addWidget(w.destination, 1)
-    output_row.addWidget(w.browse)
-    output_layout.addLayout(output_row)
+    output_layout.addWidget(w.destination)
+    w.browse = button("Choose folder…", w._choose_directory)
+    output_layout.addWidget(w.browse)
+    output_layout.addWidget(label("Output name"))
+    w.output_name = QLineEdit()
+    w.output_name.setPlaceholderText("Automatic name")
+    w.output_name.setAccessibleName("Output name")
+    w.output_name.textEdited.connect(w._settings_changed)
+    output_layout.addWidget(w.output_name)
+    output_layout.addWidget(label("The file extension is chosen automatically.", "muted"))
     w.open_button = button("Open output folder", w._open_directory)
-    output_actions = QHBoxLayout()
-    output_actions.addWidget(w.open_button)
-    w.compare_button = button("Compare before / after", w._open_comparison)
-    w.compare_button.setAccessibleName("Compare original and converted file")
-    w.compare_button.setEnabled(False)
-    output_actions.addWidget(w.compare_button)
+    output_layout.addWidget(w.open_button)
     w.report_button = button("View cleaning report", w._open_report)
     w.report_button.setEnabled(False)
     w.report_button.hide()
-    output_actions.addWidget(w.report_button)
-    output_actions.addStretch()
-    output_layout.addLayout(output_actions)
-    body_layout.addWidget(output_panel)
-    body_layout.addStretch()
-    scroll = QScrollArea()
-    scroll.setWidgetResizable(True)
-    scroll.setWidget(body)
-    work.addWidget(scroll, 1)
+    output_layout.addWidget(w.report_button)
+    settings.addWidget(output_panel)
+    settings.addStretch()
+    w.settings_scroll = QScrollArea()
+    w.settings_scroll.setWidgetResizable(True)
+    w.settings_scroll.setWidget(w.settings_panel)
+    w.settings_scroll.setMinimumWidth(230)
+    w.workspace_splitter.addWidget(w.settings_scroll)
+    w.workspace_splitter.setStretchFactor(0, 0)
+    w.workspace_splitter.setStretchFactor(1, 1)
+    w.workspace_splitter.setStretchFactor(2, 0)
+    w.workspace_splitter.setSizes([230, 520, 310])
+    work.addWidget(w.workspace_splitter, 1)
+    w.result_banner, result_layout = panel()
+    w.result_banner.setObjectName("resultBanner")
+    result_layout.setContentsMargins(16, 12, 16, 12)
+    result_layout.setSpacing(7)
+    w.result_title = label("Ready to make a new copy", "resultTitle")
+    w.result_detail = label("Add files and choose where to save them.", "muted")
+    w.result_title.setAccessibleName("Result status")
+    w.result_detail.setAccessibleName("Result details")
+    result_layout.addWidget(w.result_title)
+    result_layout.addWidget(w.result_detail)
+    result_actions = QHBoxLayout()
+    w.result_open = button(
+        "Open result",
+        lambda: w._open_result(w.files.currentItem())
+        if w.files.currentItem() is not None
+        else None,
+    )
+    w.result_compare = button("Compare before / after", w._open_comparison)
+    w.result_compare.setAccessibleName("Compare original and converted file")
+    w.compare_button = w.result_compare
+    w.result_retry = button("Retry failed", w._retry)
+    w.retry_button = w.result_retry
+
+    w.result_adjust = button("Adjust options", w._adjust_settings)
+    for control in (w.result_open, w.result_compare, w.result_retry, w.result_adjust):
+        result_actions.addWidget(control)
+    result_actions.addStretch()
+    result_layout.addLayout(result_actions)
+    w.result_open.setEnabled(False)
+    w.result_compare.setEnabled(False)
+    w.result_compare.hide()
+    w.result_retry.hide()
+    work.addWidget(w.result_banner)
     w.pages.addWidget(w.workspace)
     w.progress = QProgressBar()
     w.progress.setRange(0, 100)
@@ -317,7 +450,14 @@ def build_window(w):
     footer = QHBoxLayout()
     w.feedback = label("Ready when you are.", "muted")
     w.feedback.setAccessibleName("Conversion progress and feedback")
-    footer.addWidget(w.feedback, 1)
+    footer_text = QVBoxLayout()
+    footer_text.setContentsMargins(0, 0, 0, 0)
+    footer_text.setSpacing(4)
+    w.summary = label("", "summary")
+    w.summary.setAccessibleName("Conversion summary")
+    footer_text.addWidget(w.summary)
+    footer_text.addWidget(w.feedback)
+    footer.addLayout(footer_text, 1)
     w.cancel_button = button("Cancel", w._cancel)
     w.cancel_button.setEnabled(False)
     w.start_button = button("Run tool", w._start, primary=True)
@@ -325,10 +465,16 @@ def build_window(w):
     footer.addWidget(w.start_button)
     outer.addLayout(footer)
     root.addWidget(canvas)
-    root.setSizes([200, 960])
+    root.setSizes([190, 1190])
     root.setCollapsible(0, False)
     root.setCollapsible(1, False)
     w.setCentralWidget(root)
+    w.drop_overlay = label("Drop files to add them", "dropOverlay")
+    w.drop_overlay.setParent(canvas)
+    w.drop_overlay.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    w.drop_overlay.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+    w.drop_overlay.setAccessibleName("Drop files to add them")
+    w.drop_overlay.hide()
     w.search.textChanged.connect(w._filter_tools)
     w.navigation.currentRowChanged.connect(w._category_changed)
     w.navigation.setCurrentRow(0)
@@ -340,6 +486,7 @@ def build_window(w):
     w.statusBar().showMessage("Choose a tool to get started. Files are processed locally.")
     w.back_button.hide()
     w.start_button.setVisible(False)
+    w.settings_toggle.setVisible(False)
     w.cancel_button.setVisible(False)
     w.pages.currentChanged.connect(lambda _: sync_workspace(w))
     w._sync_files()
@@ -356,14 +503,29 @@ def sync_workspace(w):
     w.back_button.setVisible(active)
     w.start_button.setVisible(active)
     w.cancel_button.setVisible(active)
+    w.summary.setVisible(active)
+    w.settings_toggle.setVisible(active)
     w.back_button.setText("‹  All tools" if active else "Tool library")
 
 
 def add_menus(w):
     file_menu = w.menuBar().addMenu("&File")
+    w.file_menu = file_menu
     tools_menu = w.menuBar().addMenu("&Tools")
+    w.tools_menu = tools_menu
     view_menu = w.menuBar().addMenu("&View")
+    w.view_menu = view_menu
     for title, shortcut, callback in (
+        (
+            "Paste files",
+            QKeySequence.StandardKey.Paste,
+            lambda: getattr(w, "_paste_files", lambda: None)(),
+        ),
+        (
+            "Undo file change",
+            QKeySequence.StandardKey.Undo,
+            lambda: getattr(w, "_undo_file_change", lambda: None)(),
+        ),
         ("Add files…", QKeySequence.StandardKey.Open, w._choose_files),
         ("Choose output folder…", "Ctrl+Shift+O", w._choose_directory),
         ("Run tool", "Ctrl+Return", w._start),
@@ -393,13 +555,32 @@ def add_menus(w):
     sidebar_action.setShortcut("Ctrl+B")
     sidebar_action.toggled.connect(w.sidebar.setVisible)
     view_menu.addAction(sidebar_action)
+    settings_action = QAction("Show options and output", w)
+    w.settings_action = settings_action
+    settings_action.setCheckable(True)
+    settings_action.setChecked(True)
+    settings_action.setShortcut("Ctrl+Shift+B")
+    settings_action.toggled.connect(w.settings_scroll.setVisible)
+    settings_action.toggled.connect(w.settings_toggle.setChecked)
+    view_menu.addAction(settings_action)
+    availability = QAction("Tool availability…", w)
+    availability.triggered.connect(lambda: getattr(w, "_show_availability", lambda: None)())
+    tools_menu.addSeparator()
+    tools_menu.addAction(availability)
     queue_menu = w.menuBar().addMenu("&Queue")
+    w.queue_menu = queue_menu
     for title, callback in (
         ("Move up", lambda: w._move(-1)),
         ("Move down", lambda: w._move(1)),
         ("Remove selected", w._remove),
         ("Retry failed", w._retry),
         ("Cancel selected", w._cancel_one),
+        (
+            "Open result",
+            lambda: w._open_result(w.files.currentItem())
+            if w.files.currentItem() is not None
+            else None,
+        ),
         ("Open output folder", w._open_directory),
         ("View cleaning report", w._open_report),
         ("Preview selected", w._open_preview),
@@ -408,3 +589,55 @@ def add_menus(w):
         action = QAction(title, w)
         action.triggered.connect(callback)
         queue_menu.addAction(action)
+
+
+def matches_search(spec, text):
+    """Match familiar task words, allowing multiword searches in any order."""
+    aliases = {
+        "pdf.to_jpeg": "jpg picture photo export extract pages render",
+        "pdf.to_png": "picture photo export extract pages render",
+        "pdf.merge": "combine join concatenate",
+        "pdf.split": "separate extract pages",
+        "pdf.compress": "shrink reduce smaller size optimize optimise",
+        "pdf.remove_metadata": "privacy clean erase author properties",
+        "pdf.protect": "password encrypt lock security",
+        "pdf.unlock": "password decrypt security",
+        "pdf.redact": "black out hide sensitive erase privacy",
+        "pdf.ocr": "scan searchable recognize recognise text",
+    }
+    words = " ".join(
+        (
+            spec.label,
+            spec.operation_id.replace("_", " "),
+            category(spec),
+            aliases.get(spec.operation_id, ""),
+        )
+    )
+    if spec.operation_id.startswith("image.to_"):
+        words += " photo picture"
+        if spec.operation_id != "image.to_pdf":
+            words += " resize dimensions scale shrink compress target size"
+    if spec.operation_id.startswith("metadata."):
+        words += " privacy clean remove erase author properties exif gps location"
+    words = words.casefold()
+    return all(token in words for token in text.casefold().split())
+
+
+def search_score(spec, text):
+    """Prefer a named tool before broader task synonyms in search selection."""
+    query = " ".join(text.casefold().split())
+    title = " ".join(spec.label.casefold().split())
+    if query and query == title:
+        return 3
+    if query and all(token in title for token in query.split()):
+        return 2
+    return int(matches_search(spec, text))
+
+
+def required_engine(spec):
+    """Describe optional local dependencies without probing or starting them."""
+    return {
+        "office.to_pdf": "LibreOffice",
+        "pdf.ocr": "Tesseract",
+        "metadata.clean_media": "FFmpeg",
+    }.get(spec.operation_id)
