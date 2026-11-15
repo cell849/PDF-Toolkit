@@ -53,3 +53,9 @@ object labels, image pixels (including cropped/hidden image areas), and the
 operating system's file metadata may still identify people. Removing supported
 metadata is not a universal anonymity guarantee. Read the in-app policy and
 review the actual output before sharing sensitive material.
+
+Offline OCR now uses a separately installed Tesseract and its local language packs
+(English `eng` by default). Scanned pages become searchable PDFs. Recognition can
+be inaccurate; existing text pages are copied by default, including mixed pages.
+OCR pages lose vector/interactive features; document bookmarks/forms/signatures
+are not preserved. The tool bounds resolution, subprocess time and page size.
