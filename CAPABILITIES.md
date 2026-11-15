@@ -7,7 +7,7 @@ button in the reference screenshots.
 | Tool | Supported behavior and limits |
 | --- | --- |
 | PDF → JPEG / PNG | Selected pages; 72/150/300 DPI; JPEG quality; PNG alpha. Rasterizes text. |
-| Images → PDF | Ordered JPEG/PNG/WebP/TIFF/BMP/GIF inputs; image-sized, A4 or Letter pages. Single-frame inputs only. |
+| Images → PDF | Ordered JPEG/PNG/WebP/TIFF/BMP/GIF/AVIF/HEIC inputs (available codecs); image-sized, A4 or Letter pages. Single-frame inputs only. |
 | Image → JPEG / PNG / WebP / TIFF / BMP | Actual-content validation, EXIF orientation, aspect-preserving maximum dimensions; metadata removed. |
 | Target-size images | Maximum KiB, quality and pixel dimensions; reduces quality/resolution as needed. Fails if unattainable. |
 | Merge PDF | Selected file-list order; preserves PDF text/vectors. |
@@ -39,8 +39,7 @@ An isolated LibreOffice profile disables macros and linked-content updates.
 Legacy binary DOC/XLS/PPT, arbitrary HTML, and Pages files are not supported.
 Some benign linked Office documents will consequently be rejected.
 
-Deferred tools: OCR (possible locally without cloud AI), secure redaction with a
-region editor, arbitrary PDF content editing, interactive form authoring/filling,
+Deferred tools: arbitrary PDF content editing, interactive form authoring/filling,
 digital certificate signatures, signing requests, PDF/A conformance validation,
 repair guarantees, document comparison, scanner/camera hardware and ZIP imports.
 These need dedicated interfaces, dependencies or correctness work; the app does
@@ -61,3 +60,22 @@ reports. Originals remain unchanged.
 36 tools total. Added DOCX/XLSX, OpenDocument and basic RTF cleaners plus a neutral-name
 text copy tool. Every currently accepted input format has an explicit privacy policy.
 See docs/FORMAT_COVERAGE.md for payload restrictions and common unsupported formats.
+
+
+## Locally committed additions
+
+40 registered tools. Metadata inspector compares parsed category counts without
+exporting private values. Selected PDFs/images and supported Office documents
+have a paged worker preview; Office rendering requires LibreOffice. AVIF support
+depends on Pillow's codec; HEIC uses the optional `media` dependency extra.
+
+Offline searchable-PDF OCR requires local Tesseract and language packs. Manual PDF
+redaction uses visual area selection, content-bound marks and a fresh raster PDF;
+all selectable text/interactivity is lost (see docs/REDACTION.md). Audio/video
+cleanup requires local FFmpeg/ffprobe: primary video/audio becomes MP4 H.264/AAC,
+audio-only becomes FLAC; other tracks, cover art, chapters and source tags are
+dropped. These re-encode media and may change quality/color/timing. Visible and
+audible personal information remains. See docs/METADATA.md.
+
+These changes have not been published as a Windows download. Saved presets were
+excluded at the user's request. There are no cloud or AI tools.

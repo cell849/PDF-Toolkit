@@ -10,6 +10,7 @@ from lxml import etree
 from PIL import ExifTags
 
 from local_pdf_toolkit.converters.image_metadata import _open as open_image_bytes
+from local_pdf_toolkit.converters.images import FORMATS
 from local_pdf_toolkit.converters.metadata_package import parse_xml_parts, read_package
 from local_pdf_toolkit.core.contracts import CancellationToken, ConverterSpec, Progress
 from local_pdf_toolkit.core.errors import ConversionError, ErrorCode
@@ -18,12 +19,7 @@ from local_pdf_toolkit.core.output import OutputTransaction
 
 SUPPORTED = (
     FileFormat.PDF,
-    FileFormat.JPEG,
-    FileFormat.PNG,
-    FileFormat.WEBP,
-    FileFormat.TIFF,
-    FileFormat.BMP,
-    FileFormat.GIF,
+    *FORMATS.values(),
     FileFormat.DOCX,
     FileFormat.XLSX,
     FileFormat.PPTX,
@@ -34,6 +30,10 @@ SUPPORTED = (
     FileFormat.TXT,
     FileFormat.CSV,
     FileFormat.MARKDOWN,
+    *(
+        FileFormat(kind)
+        for kind in ("mp4", "mov", "mkv", "webm", "avi", "mp3", "m4a", "wav", "flac", "ogg", "aac")
+    ),
 )
 
 
@@ -186,6 +186,24 @@ def _inventory(path, token):
         # Frontmatter is not automatically interpreted or declared scrubbed.
         if path.suffix.lower() == ".md" and header.lstrip().startswith((b"---", b"+++")):
             add("Possible Markdown frontmatter (content not inspected)")
+    elif path.suffix.lower() in {
+        ".mp4",
+        ".mov",
+        ".mkv",
+        ".webm",
+        ".avi",
+        ".mp3",
+        ".m4a",
+        ".wav",
+        ".flac",
+        ".ogg",
+        ".aac",
+    }:
+        from local_pdf_toolkit.converters.media_metadata import inspect_media
+
+        media = inspect_media(path, token)
+        kind = media["format"].value.upper()
+        counts.update(media["counts"])
     else:
         try:
             with open_image_bytes(path.read_bytes()) as image:

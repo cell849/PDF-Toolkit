@@ -26,6 +26,8 @@ EXTENSIONS = {
     "TIFF": "tiff",
     "BMP": "bmp",
     "GIF": "gif",
+    "AVIF": "avif",
+    "HEIF": "heic",
 }
 
 
@@ -59,7 +61,7 @@ def verify_clean_image_bytes(data, expected=None):
         ):
             raise ConversionError(ErrorCode.CONVERSION_FAILED, "Cleaned image verification failed.")
         forbidden = {"exif", "xmp", "icc_profile", "comment", "XML:com.adobe.xmp", "description"}
-        if forbidden.intersection(image.info):
+        if any(image.info.get(key) for key in forbidden):
             raise ConversionError(ErrorCode.CONVERSION_FAILED, "Image still contains metadata.")
         if image.format == "TIFF":
             structural = {256, 257, 258, 259, 262, 273, 277, 278, 279, 284, 338, 339}
@@ -82,7 +84,11 @@ def clean_image_bytes(data: bytes) -> bytes:
                 kind = source.format
                 with ImageOps.exif_transpose(source) as oriented:
                     alpha = "A" in oriented.getbands() or "transparency" in oriented.info
-                    mode = "RGBA" if alpha and kind in ("PNG", "WEBP", "TIFF", "GIF") else "RGB"
+                    mode = (
+                        "RGBA"
+                        if alpha and kind in ("PNG", "WEBP", "TIFF", "GIF", "AVIF", "HEIF")
+                        else "RGB"
+                    )
                     if kind in ("PNG", "TIFF") and oriented.mode in (
                         "I;16",
                         "I;16B",
@@ -95,7 +101,7 @@ def clean_image_bytes(data: bytes) -> bytes:
                         # A fresh instance severs info, EXIF and TIFF tag dictionaries.
                         with Image.frombytes(mode, converted.size, converted.tobytes()) as fresh:
                             result = io.BytesIO()
-                            options = {"quality": 95} if kind == "JPEG" else {}
+                            options = {"quality": 95} if kind in ("JPEG", "AVIF", "HEIF") else {}
                             if kind == "WEBP":
                                 options["lossless"] = True
                             if kind == "TIFF":
@@ -129,7 +135,7 @@ class ImageMetadataConverter:
             "Rebuilds a single-frame image without EXIF/GPS, XMP/IPTC, ICC, "
             "comments or thumbnails. "
             "Output uses a neutral filename. Necessary container structure remains.",
-            "JPEG is re-encoded at quality 95. Some modes convert to RGB/RGBA; "
+            "JPEG, AVIF and HEIC are re-encoded at quality 95. Some modes convert to RGB/RGBA; "
             "removing color profiles can change appearance. Visible personal information and "
             "pixel steganography remain. This is not an anonymity guarantee.",
         ),
@@ -181,7 +187,7 @@ class ImageMetadataConverter:
                     "height": image.height,
                     "policy": "Rebuilt from oriented pixels; source metadata and trailers omitted.",
                     "policy_categories": ["EXIF/GPS", "XMP/IPTC", "ICC", "comments", "thumbnails"],
-                    "encoding": "Pixels rebuilt; JPEG quality 95; WebP lossless; "
+                    "encoding": "Pixels rebuilt; JPEG/AVIF/HEIC quality 95; WebP lossless; "
                     "color modes may convert.",
                     "limits": "Visible content, pixel steganography and filesystem data "
                     "are not anonymized. "

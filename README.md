@@ -153,3 +153,8 @@ before use; visible personal content is not automatically anonymized.
 
 Office metadata coverage now includes DOCX/XLSX, ODT/ODS/ODP and basic RTF.
 See [format coverage](docs/FORMAT_COVERAGE.md) and [proposed useful tools](docs/TOOL_IDEAS.md).
+
+Optional photo codecs: install `-e ".[dev,media]"` instead of `-e ".[dev]"`
+for HEIC/HEIF support. AVIF uses Pillow's available native codec. The Windows
+packaging recipe includes the photo-codec extra. OCR requires separately installed
+Tesseract and local language packs; nothing is downloaded while the app runs.

@@ -116,3 +116,18 @@ private-value removal, package fields, output rollback and actual Office loading
 Registered input formats must all have an explicit privacy policy; track common
 unsupported formats in docs/FORMAT_COVERAGE.md. New tool suggestions are proposals
 only, ranked in docs/TOOL_IDEAS.md, not automatically added to implementation.
+
+## User-authorized staged additions — 2026-11-15
+
+The user approved inspector/comparison, previews, offline OCR, manual secure
+redaction and broader photo/audio/video cleaning. Saved batch presets (proposal
+3) are explicitly excluded. Changes must remain in local commits; publishing or
+pushing is not authorized for this work.
+
+Implemented acceptance: masked parsed category counts; bounded worker previews
+with temporary cleanup; local Tesseract OCR with time/cancel/language checks;
+visual normalized marks and verified fresh raster PDF redaction; HEIC/AVIF codec
+round trips; bounded primary-stream FFmpeg transcodes with independent output
+verification. Originals remain unchanged. External executables are optional,
+separately installed and never downloaded at runtime. Native Windows packaging
+must be checked separately before a future release.

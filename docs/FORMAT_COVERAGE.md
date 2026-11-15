@@ -1,4 +1,4 @@
-# Metadata coverage audit — v0.5.0
+# Metadata coverage audit
 
 This inventories the app's current inputs and common file families, not every
 file format ever created. The test suite compares all registered conversion
@@ -25,10 +25,11 @@ Supported formats can still contain unsupported features; those fail explicitly.
 | Visio VSD/VSDX, Publisher PUB, Access MDB/ACCDB, OneNote ONE/ONEPKG | Unsupported; each needs a dedicated parser and hidden-content policy. |
 | Outlook MSG/EML/PST/OST | Unsupported. Sender/recipient headers and attachment contents require an email-specific policy. |
 | Google GDOC/GSHEET/GSLIDES shortcuts | These are links, not full local documents. Export a supported document first. |
-| HEIC/HEIF, AVIF, JPEG XL, JPEG 2000 | Not yet supported by this app's verified cleaner/codec matrix. |
+| HEIC/HEIF, AVIF | Verified same-container pixel rebuilding; HEIC requires optional codec. Re-encoding may lose precision/color. |
+| JPEG XL, JPEG 2000 | Unsupported by the verified cleaner/codec matrix. |
 | Camera RAW CR2/CR3/NEF/ARW/DNG, Photoshop PSD, GIMP XCF | Unsupported. Raw/layer/history data need specialized handling; export a flattened supported image. |
 | SVG, EPS, AI | Unsupported; vectors can contain scripts, links, text and editing metadata. |
-| MP4/MOV/MKV/AVI, MP3/M4A/FLAC/WAV/OGG | Unsupported; media tags, timed streams, cover art and container fields need dedicated handling. |
+| MP4/MOV/MKV/WebM/AVI, MP3/M4A/FLAC/WAV/OGG/AAC | Local FFmpeg primary-stream reconstruction to MP4 or FLAC; source tags, cover art, chapters and other streams dropped. |
 | ZIP/7Z/RAR/TAR | Unsupported as a privacy-cleaned archive. Archive filenames/timestamps and every nested file need separate handling. |
 | HTML, EPUB, XML, JSON, YAML | No dedicated cleaner. Metadata can be mixed with meaningful document content; do not treat an unchanged text copy as scrubbed. |
 | Executables, installers, arbitrary binaries | Unsupported. Modifying them can invalidate signatures or break software. |
@@ -59,3 +60,11 @@ Offline OCR now uses a separately installed Tesseract and its local language pac
 be inaccurate; existing text pages are copied by default, including mixed pages.
 OCR pages lose vector/interactive features; document bookmarks/forms/signatures
 are not preserved. The tool bounds resolution, subprocess time and page size.
+
+
+HEIC/HEIF and AVIF single images are now accepted by image tools when their local
+codec is available. HEIC requires the optional media extra. Audio/video cleanup
+accepts content-verified MP4/MOV/MKV/WebM/AVI/MP3/M4A/WAV/FLAC/OGG/AAC through
+separately installed FFmpeg/ffprobe, with MP4 or FLAC reconstruction. Metadata
+inspection supports these containers too. See docs/METADATA.md for destructive
+format, stream and quality limits.

@@ -16,3 +16,9 @@ Before any distribution: choose a project license, inventory actual bundled
 components and their licenses/notices, verify compliance, test the Windows build,
 and address code signing/update policies. No project distribution license or
 commercial rights are implied by generation of this package.
+
+The optional media extra includes pillow-heif and its native HEIF/HEVC codec
+libraries. Inventory the actual Windows wheel's bundled components and their
+licenses before redistribution. AVIF support depends on Pillow's bundled codec.
+Tesseract and FFmpeg/FFprobe are separately installed optional executables and are
+not bundled or downloaded by this application.

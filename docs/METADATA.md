@@ -110,3 +110,30 @@ content and unrecognized structures require separate review.
 work locally; Office previews require installed LibreOffice and may differ with
 available fonts. Page previews are bounded to 1400 pixels and kept in a temporary
 directory removed when the viewer closes. Original files are unchanged.
+
+### AVIF and HEIC photos
+
+AVIF is supported when the installed Pillow build includes its codec. HEIC/HEIF
+uses optional `pillow-heif` (`pip install -e '.[media]'`). The Windows packaging
+recipe installs that extra. These photos join image conversion, image-to-PDF,
+inspection and preview, as well as same-container metadata cleaning. Cleanup
+rebuilds a single image from decoded pixels at quality 95; alpha is retained.
+High bit depth/color modes may normalize to 8-bit RGB/RGBA and removing profiles
+can change color. Multi-image/animated files are rejected. HEIC depth/auxiliary
+images and thumbnails are omitted. No codec is downloaded at runtime.
+
+### Audio and video
+
+“Clean audio / video metadata” requires separately installed local FFmpeg and
+ffprobe. It verifies containers independently of filename, snapshots the source,
+and re-encodes the primary video/audio streams to MP4 H.264/AAC, or audio-only to
+FLAC. It drops source tags, chapters, subtitles, cover art, attachments and other
+tracks; no original encoded stream is copied. Generated technical container and
+codec fields remain. Reports contain category counts, never source tag values.
+
+Input/output are bounded to 512 MiB, input duration to one hour, video to 40
+million pixels and audio to eight channels/192 kHz. Each process has a timeout;
+cancel terminates its process tree. Partial/truncated output is rejected.
+Encoding can change quality, color and timing; video normalizes to 8-bit YUV420p
+and pads odd dimensions, audio-only FLAC uses 24-bit samples. Voices, depicted
+people, visible text and steganography remain. This is not an anonymity guarantee.

@@ -40,7 +40,7 @@ def category(spec):
         return "Privacy"
     if operation == "pdf.compress":
         return "Optimize"
-    if operation in ("pdf.protect", "pdf.unlock", "pdf.remove_metadata"):
+    if operation in ("pdf.protect", "pdf.unlock", "pdf.remove_metadata", "pdf.redact"):
         return "Security"
     if operation.startswith("image."):
         return "Images"

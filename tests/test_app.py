@@ -108,6 +108,7 @@ def test_privacy_tools_share_native_workspace_and_report(qapp, tmp_path):
             "metadata.clean_rtf",
             "metadata.neutral_text",
             "metadata.inspect",
+            "metadata.clean_media",
         }
         window._select_tool(
             next(

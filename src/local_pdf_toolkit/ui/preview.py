@@ -118,7 +118,7 @@ class PageCanvas(QGraphicsView):
 
 
 class PreviewDialog(QDialog):
-    def __init__(self, path, parent=None, marking=False, regions=None):
+    def __init__(self, path, parent=None, marking=False, regions=None, source_digest=""):
         super().__init__(parent)
         self.setWindowTitle("Mark redactions" if marking else "Document preview")
         self.resize(880, 740)
@@ -126,8 +126,10 @@ class PreviewDialog(QDialog):
         self._temp = tempfile.TemporaryDirectory(prefix="pdf-toolkit-preview-")
         self._closing = False
         self._marking = marking
+        self._office_preview = False
         self.marked = dict(regions or {})
         self._current = 1
+        self.source_digest = source_digest
         self.jobs = JobController(self)
         self.jobs.finished.connect(self._finished)
         layout = QVBoxLayout(self)
@@ -193,6 +195,14 @@ class PreviewDialog(QDialog):
             self.done_button.setEnabled(not self._marking)
             return
         info = json.loads(paths[1].read_text())
+        if self._marking and self.source_digest and info["source_sha256"] != self.source_digest:
+            paths[0].unlink(missing_ok=True)
+            paths[1].unlink(missing_ok=True)
+            self.feedback.setText("The source changed. Close this window and mark it again.")
+            self.done_button.setEnabled(False)
+            return
+        self.source_digest = info["source_sha256"]
+        self._office_preview |= info.get("office_approximation", False)
         self.page.blockSignals(True)
         self.page.setRange(1, info["pages"])
         self.page.blockSignals(False)
@@ -211,7 +221,7 @@ class PreviewDialog(QDialog):
             )
             + (
                 " Office layout is approximate and depends on local fonts."
-                if info.get("office_approximation")
+                if self._office_preview
                 else ""
             )
         )

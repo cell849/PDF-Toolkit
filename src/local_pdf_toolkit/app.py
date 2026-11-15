@@ -16,6 +16,7 @@ def build_registry():
     from local_pdf_toolkit.converters.image_metadata import ImageMetadataConverter
     from local_pdf_toolkit.converters.images import image_converters
     from local_pdf_toolkit.converters.inspector import MetadataInspector
+    from local_pdf_toolkit.converters.media_metadata import media_metadata_converters
     from local_pdf_toolkit.converters.ocr import ocr_converters
     from local_pdf_toolkit.converters.odf_metadata import OdfMetadataConverter
     from local_pdf_toolkit.converters.office_metadata import OfficeMetadataConverter
@@ -24,6 +25,7 @@ def build_registry():
     from local_pdf_toolkit.converters.pdf_office import pdf_office_converters
     from local_pdf_toolkit.converters.pdf_tools import pdf_tool_converters
     from local_pdf_toolkit.converters.pptx_metadata import PptxMetadataConverter
+    from local_pdf_toolkit.converters.redaction import redaction_converters
     from local_pdf_toolkit.converters.text_metadata import TextMetadataConverter
 
     registry = ConverterRegistry()
@@ -45,6 +47,8 @@ def build_registry():
     )
     converters.append(MetadataInspector())
     converters.extend(ocr_converters())
+    converters.extend(redaction_converters())
+    converters.extend(media_metadata_converters())
     for converter in converters:
         registry.register(converter)
     return registry

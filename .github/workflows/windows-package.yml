@@ -21,7 +21,7 @@ jobs:
           python-version: '3.13'
           architecture: x64
       - run: python -m venv .venv
-      - run: ./.venv/Scripts/python.exe -m pip install -e ".[dev]"
+      - run: ./.venv/Scripts/python.exe -m pip install -e ".[dev,media]"
       - run: ./.venv/Scripts/python.exe -m ruff check .
       - run: ./.venv/Scripts/python.exe -m ruff format --check .
       - name: Run tests

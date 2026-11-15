@@ -6,7 +6,7 @@ import warnings
 from pathlib import Path
 
 import pymupdf
-from PIL import Image, ImageOps, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError, features
 
 from local_pdf_toolkit.core.contracts import ConverterSpec, OptionDefinition, Progress
 from local_pdf_toolkit.core.errors import ConversionError, ErrorCode
@@ -21,6 +21,16 @@ FORMATS = {
     "BMP": FileFormat.BMP,
     "GIF": FileFormat.GIF,
 }
+if features.check("avif"):
+    FORMATS["AVIF"] = FileFormat.AVIF
+try:
+    import pillow_heif
+except ImportError:
+    pass
+else:
+    pillow_heif.register_heif_opener()
+    FORMATS["HEIF"] = FileFormat.HEIC
+
 Image.MAX_IMAGE_PIXELS = 40_000_000
 
 

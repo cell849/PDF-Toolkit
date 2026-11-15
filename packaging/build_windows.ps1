@@ -6,11 +6,12 @@ try {
         throw 'Build the Windows app on Windows with 64-bit Python 3.13.'
     }
     $python = Join-Path $projectRoot '.venv\Scripts\python.exe'
-    if (-not (Test-Path $python)) { throw 'Create .venv and install .[dev] first; see README.md.' }
+    if (-not (Test-Path $python)) { throw 'Create .venv and install .[dev,media] first; see README.md.' }
     & $python -c "import struct, sys; sys.exit(0 if sys.version_info[:2] == (3, 13) and struct.calcsize('P') == 8 else 1)"
     if ($LASTEXITCODE -ne 0) { throw 'Use a 64-bit Python 3.13 virtual environment.' }
     & $python -m PyInstaller --noconfirm --clean --windowed --onedir --name LocalPDFToolkit `
-        --collect-all docx --collect-all pptx --collect-all openpyxl `
+        --collect-all docx --collect-all pptx --collect-all openpyxl --hidden-import pillow_heif `
+        --additional-hooks-dir packaging/hooks `
         --add-data 'CAPABILITIES.md:.' --add-data 'packaging/THIRD_PARTY.md:.' packaging/launcher.py
     if ($LASTEXITCODE -ne 0) { throw 'PyInstaller build failed.' }
     $app = Join-Path $projectRoot 'dist\LocalPDFToolkit\LocalPDFToolkit.exe'

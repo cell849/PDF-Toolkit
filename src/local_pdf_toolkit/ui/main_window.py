@@ -120,6 +120,12 @@ class MainWindow(QMainWindow):
                 )
                 if not inspection.get("counts"):
                     lines.append("No fields detected in the supported structures.")
+            if report.get("removed_category_counts"):
+                lines.extend(["", "REMOVED CATEGORY COUNTS"])
+                lines.extend(
+                    f"{key.replace('_', ' ')}: {value}"
+                    for key, value in report["removed_category_counts"].items()
+                )
             comparison = report.get("comparison", [])
             if comparison:
                 lines.extend(["", "BEFORE → AFTER"])
@@ -173,7 +179,7 @@ class MainWindow(QMainWindow):
         self.options_heading.setText(
             "Cleaning policy" if privacy and not spec.options else "Options"
         )
-        self.report_button.setVisible(privacy)
+        self.report_button.setVisible(privacy or spec.operation_id == "pdf.redact")
         self.report_button.setEnabled(any(self._results.values()))
         self.tool_title.setText(spec.label.replace(" / resize / compress", ""))
         self.tool_hint.setText(
@@ -191,7 +197,16 @@ class MainWindow(QMainWindow):
                     "Inspect one file, or compare original then cleaned copy. Values stay masked."
                 )
         for option in spec.options:
-            if option.choices:
+            if spec.operation_id == "pdf.redact" and option.name == "source_sha256":
+                self._editors[option.name] = self._redaction_control.digest
+                continue
+            if spec.operation_id == "pdf.redact" and option.name == "regions":
+                from local_pdf_toolkit.ui.redaction import RedactionControl
+
+                widget = RedactionControl(self)
+                self._redaction_control = widget
+                getter = widget.value
+            elif option.choices:
                 widget = QComboBox()
                 for choice in option.choices:
                     widget.addItem(str(choice), choice)
@@ -214,7 +229,11 @@ class MainWindow(QMainWindow):
                 if option.name == "password":
                     widget.setEchoMode(QLineEdit.EchoMode.Password)
                 getter = widget.text
-            widget.setToolTip(option.description)
+            widget.setToolTip(
+                "Mark areas on the displayed PDF pages. All pages are rebuilt as images."
+                if spec.operation_id == "pdf.redact" and option.name == "regions"
+                else option.description
+            )
             self.form.addRow(option.label, widget)
             self._editors[option.name] = getter
         self.notice.setText(" ".join(spec.limitations))
@@ -298,6 +317,7 @@ class MainWindow(QMainWindow):
             self.search,
             self.navigation,
             self.back_button,
+            self.preview_button,
         ):
             widget.setEnabled(not active)
         self.cancel_button.setEnabled(active)
@@ -326,6 +346,18 @@ class MainWindow(QMainWindow):
                 dict(self._options_values),
                 self._output_directory,
             )
+        if self._converter.spec.operation_id == "pdf.redact":
+            from local_pdf_toolkit.ui.redaction import signature
+
+            if self._retrying:
+                valid = signature(self._paths) == getattr(self, "_redaction_source", None)
+            else:
+                valid = self._options_values.get("regions", "[]") != "[]"
+                self._redaction_source = signature(self._paths)
+            if len(self._paths) != 1 or not valid:
+                self.statusBar().showMessage("Add exactly one unchanged PDF and mark areas first.")
+                self._retrying = False
+                return
         indices = sorted(self._failed) if self._retrying else list(range(len(self._paths)))
         self._retrying = False
         self._failed.clear()

@@ -1,5 +1,6 @@
 """One bounded preview page per worker job; all outputs belong to a temporary dialog."""
 
+import hashlib
 import json
 import shutil
 import tempfile
@@ -55,7 +56,6 @@ class PreviewConverter:
         page_number = self.validate_options(options)["page"]
         path = Path(input_path)
         cancel_token.raise_if_cancelled()
-        kind = self.validate_input(path)
         token = uuid4().hex[:12]
         name = f"preview-{token}.png"
         info_name = f"preview-{token}.json"
@@ -64,6 +64,21 @@ class PreviewConverter:
                 tempfile.TemporaryDirectory(prefix="pdf-toolkit-preview-") as scratch,
                 OutputTransaction(Path(output_dir)) as output,
             ):
+                snapshot = Path(scratch) / ("source" + path.suffix)
+                digest = hashlib.sha256()
+                total = 0
+                with path.open("rb") as original, snapshot.open("xb") as target:
+                    while chunk := original.read(1024 * 1024):
+                        cancel_token.raise_if_cancelled()
+                        total += len(chunk)
+                        if total > 512 * 1024 * 1024:
+                            raise ConversionError(
+                                ErrorCode.INVALID_INPUT, "Preview exceeds 512 MiB."
+                            )
+                        digest.update(chunk)
+                        target.write(chunk)
+                path = snapshot
+                kind = self.validate_input(path)
                 prepared = None
                 office = kind not in (FileFormat.PDF, *FORMATS.values())
                 if office:
@@ -115,6 +130,7 @@ class PreviewConverter:
                                 "office_approximation": False,
                             }
                 cancel_token.raise_if_cancelled()
+                info["source_sha256"] = digest.hexdigest()
                 (output.staging / info_name).write_text(json.dumps(info), encoding="utf-8")
                 progress(Progress(1, 1))
                 return output.publish(
