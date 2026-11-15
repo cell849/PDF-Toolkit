@@ -58,6 +58,7 @@ def main() -> int:
 
         return self_test()
     from PySide6.QtWidgets import QApplication
+
     from local_pdf_toolkit.ui.main_window import MainWindow
 
     if sys.platform == "win32":
