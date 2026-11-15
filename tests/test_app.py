@@ -74,7 +74,8 @@ def test_library_cards_categories_and_compact_workspace(qapp):
         for scroll in window.workspace.findChildren(QScrollArea):
             assert scroll.horizontalScrollBar().maximum() == 0, (
                 f"{scroll.widget().objectName()}: viewport={scroll.viewport().width()}, "
-                f"content={scroll.widget().width()}, minimum={scroll.widget().minimumSizeHint().width()}, "
+                f"content={scroll.widget().width()}, "
+                f"minimum={scroll.widget().minimumSizeHint().width()}"
             )
         window._set_active(True)
         window._show_library()
