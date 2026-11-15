@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QHBoxLayout,
     QLabel,
+    QLayout,
     QListView,
     QSlider,
     QSpinBox,
@@ -125,6 +126,9 @@ class TargetSizeEditor(QWidget):
         super().__init__(parent)
         self.setObjectName("inlineControl")
         layout = QVBoxLayout(self)
+        # The horizontal row must not impose its two-field minimum before it
+        # gets a chance to stack at the scroll viewport's actual width.
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
         row = QHBoxLayout()
