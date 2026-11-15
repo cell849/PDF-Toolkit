@@ -145,7 +145,9 @@ class MainWindow(QMainWindow):
         while self.form.rowCount():
             self.form.removeRow(0)
         self._editors = {}
+        self.start_button.setEnabled(index >= 0 and not self._active)
         if index < 0:
+            self.notice.clear()
             return
         spec = self._operations[index]
         for option in spec.options:
@@ -233,8 +235,11 @@ class MainWindow(QMainWindow):
         ):
             widget.setEnabled(not active)
         self.cancel_button.setEnabled(active)
+        self.start_button.setEnabled(not active and self.operation_list.currentRow() >= 0)
 
     def _start(self):
+        if self._active or (not self._retrying and self.operation_list.currentRow() < 0):
+            return
         if (
             not self._paths
             or not self.destination.text()
@@ -324,8 +329,14 @@ class MainWindow(QMainWindow):
         self.cancel_button.setEnabled(False)
 
     def _filter_tools(self, text):
+        visible = []
         for index, spec in enumerate(self._operations):
-            self.operation_list.item(index).setHidden(text.lower() not in spec.label.lower())
+            matches = text.lower() in spec.label.lower()
+            self.operation_list.item(index).setHidden(not matches)
+            if matches:
+                visible.append(index)
+        if self.operation_list.currentRow() not in visible:
+            self.operation_list.setCurrentRow(visible[0] if visible else -1)
 
     def _move(self, delta):
         index = self.files.currentRow()

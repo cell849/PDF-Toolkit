@@ -1,5 +1,13 @@
 name: Windows package
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Optional new release tag (e.g. v0.2.1)
+        required: false
+        type: string
+permissions:
+  contents: write
 jobs:
   package:
     runs-on: windows-latest
@@ -26,3 +34,14 @@ jobs:
           name: LocalPDFToolkit-Windows-x64
           path: dist/LocalPDFToolkit-Windows-x64.zip
           if-no-files-found: error
+
+      - name: Publish Windows download
+        if: inputs.release_tag != ''
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') { throw 'Use a version tag such as v0.2.1.' }
+          gh release create $env:RELEASE_TAG dist/LocalPDFToolkit-Windows-x64.zip --target $env:GITHUB_SHA --title "Local PDF Toolkit $env:RELEASE_TAG" --notes-file packaging/RELEASE_NOTES.md
+          if ($LASTEXITCODE -ne 0) { throw 'Release creation failed.' }

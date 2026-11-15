@@ -56,3 +56,14 @@ Windows DLL discovery, Windows process-tree cancellation, font fidelity,
 SmartScreen behavior or clean-machine compatibility.
 
 See THIRD_PARTY.md before any redistribution.
+
+## Simplified download
+
+Use https://github.com/cell849/tools/releases/latest and select the Windows ZIP
+under Assets. Release assets are the app ZIP itself, so extraction is needed
+only once. The source-code archives automatically listed by GitHub are not the app.
+The private repository still requires GitHub sign-in.
+
+To publish a new private release, manually run Windows package with a new
+`release_tag` such as `v0.2.1`. A release is created only after tests, packaging
+and the frozen-worker smoke check pass; existing releases are not overwritten.

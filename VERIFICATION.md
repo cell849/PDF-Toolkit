@@ -142,3 +142,17 @@ required EGL/OpenGL runtime libraries. Test runs have per-test and step timeouts
 This section supersedes earlier statements that no Windows binary was built.
 Manual Windows 11 desktop testing and the optional final independent review
 remain outstanding. No uploaded user document was committed to the repository.
+
+## v0.2.1 maintenance review
+
+Focused review of UI selection, worker/output handling and conversion adapters
+retained all 28 operations. Fixed hidden tool selection after search, CMYK image
+output compatibility, transparent BMP flattening, string-path image-to-PDF input
+and pre-decode cancellation. Removed a redundant full image copy and validation
+reopen; intermediate Pillow images now close explicitly. Metadata removal keeps
+PNG transparency. No speed improvement or exhaustive audit is claimed.
+
+Regression coverage includes eight new image tests and a search-selection test.
+GitHub Releases now offers a direct Windows ZIP; README links to latest release.
+Release publication is gated by Windows tests, packaging and the frozen-worker
+self-test. Repository visibility remains private.

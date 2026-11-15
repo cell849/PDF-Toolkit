@@ -19,3 +19,19 @@ def test_application_registry_and_all_option_forms(qapp):
             assert values == {d.name: d.default for d in spec.options}
     finally:
         window.close()
+
+
+def test_search_cannot_run_hidden_operation(qapp):
+    window = MainWindow(build_registry())
+    try:
+        window.search.setText("Compress PDF")
+        selected = window._operations[window.operation_list.currentRow()]
+        assert selected.operation_id == "pdf.compress"
+        window.search.setText("no matching operation")
+        assert window.operation_list.currentRow() == -1
+        assert not window.start_button.isEnabled()
+        assert not window._editors
+        window.search.clear()
+        assert window.start_button.isEnabled()
+    finally:
+        window.close()

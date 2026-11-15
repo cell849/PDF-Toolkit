@@ -46,7 +46,10 @@ def open_image(path):
                         "Multi-frame images are unsupported; extract frames first.",
                     )
                 image.load()
-                return ImageOps.exif_transpose(image).copy()
+                # exif_transpose already returns an independent image.
+                result = ImageOps.exif_transpose(image)
+                result.format = image.format
+                return result
     except (
         OSError,
         ValueError,
@@ -58,10 +61,10 @@ def open_image(path):
 
 
 def opaque(image):
-    rgba = image.convert("RGBA")
-    background = Image.new("RGB", rgba.size, "white")
-    background.paste(rgba, mask=rgba.getchannel("A"))
-    return background
+    with image.convert("RGBA") as rgba, rgba.getchannel("A") as alpha:
+        background = Image.new("RGB", rgba.size, "white")
+        background.paste(rgba, mask=alpha)
+        return background
 
 
 class ImageConverter:
@@ -112,10 +115,8 @@ class ImageConverter:
         )
 
     def validate_input(self, path):
-        image = open_image(path)
-        image.close()
-        with Image.open(path) as source:
-            return FORMATS[source.format]
+        with open_image(path) as image:
+            return FORMATS[image.format]
 
     def validate_options(self, options):
         definitions = {d.name: d for d in self.spec.options}
@@ -131,6 +132,7 @@ class ImageConverter:
 
     def convert(self, input_path, output_dir, options, progress, cancel_token):
         opts = self.validate_options(options)
+        cancel_token.raise_if_cancelled()
         image = open_image(input_path)
         try:
             image.thumbnail(
@@ -139,8 +141,22 @@ class ImageConverter:
             )
             target = opts["target_kib"] * 1024
             file_format = self.format.value.upper()
-            if self.format == FileFormat.JPEG:
-                image = opaque(image)
+            if self.format in (FileFormat.JPEG, FileFormat.BMP):
+                converted = opaque(image)
+                image.close()
+                image = converted
+            elif self.format == FileFormat.WEBP or (
+                self.format == FileFormat.PNG and image.mode in ("CMYK", "F")
+            ):
+                mode = "RGBA" if "A" in image.getbands() or "transparency" in image.info else "RGB"
+                converted = image.convert(mode)
+                image.close()
+                image = converted
+            # Preserve palette transparency while dropping descriptive metadata.
+            transparency = image.info.get("transparency")
+            image.info.clear()
+            if transparency is not None:
+                image.info["transparency"] = transparency
             result = None
             for attempt in range(32):
                 cancel_token.raise_if_cancelled()
@@ -164,7 +180,9 @@ class ImageConverter:
                 size = (max(1, int(image.width * 0.8)), max(1, int(image.height * 0.8)))
                 if size == image.size:
                     break
-                image = image.resize(size, Image.Resampling.LANCZOS)
+                resized = image.resize(size, Image.Resampling.LANCZOS)
+                image.close()
+                image = resized
             if result is None:
                 raise ConversionError(
                     ErrorCode.INVALID_OPTIONS, "Target size cannot be met. Increase the size limit."
@@ -212,15 +230,15 @@ class ImagesPdfConverter:
 
     def convert(self, input_path, output_dir, options, progress, cancel_token):
         opts = self.validate_options(options)
-        paths = (input_path,) if isinstance(input_path, Path) else tuple(input_path)
+        cancel_token.raise_if_cancelled()
+        paths = (Path(input_path),) if isinstance(input_path, str | Path) else tuple(input_path)
         if not paths or len(paths) > 10000:
             raise ConversionError(ErrorCode.INVALID_INPUT, "Select 1–10,000 images.")
         try:
             with OutputTransaction(Path(output_dir)) as output, pymupdf.open() as document:
                 for index, path in enumerate(paths, 1):
                     cancel_token.raise_if_cancelled()
-                    with open_image(path) as source:
-                        image = opaque(source)
+                    with open_image(path) as source, opaque(source) as image:
                         buffer = io.BytesIO()
                         image.save(buffer, format="PNG")
                         size = {"A4": (595, 842), "Letter": (612, 792)}.get(
@@ -228,7 +246,6 @@ class ImagesPdfConverter:
                         )
                         page = document.new_page(width=size[0], height=size[1])
                         page.insert_image(page.rect, stream=buffer.getvalue(), keep_proportion=True)
-                        image.close()
                     progress(Progress(index, len(paths)))
                 name = f"{safe_stem(paths[0])}_images.pdf"
                 document.save(output.staging / name, garbage=4, deflate=True)

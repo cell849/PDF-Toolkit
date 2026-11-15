@@ -1,5 +1,13 @@
 # Local PDF Toolkit
 
+**[Download the Windows app](https://github.com/cell849/tools/releases/latest)**
+
+On the release page, expand **Assets** and download **LocalPDFToolkit-Windows-x64.zip**.
+Extract it once, open the LocalPDFToolkit folder, and launch LocalPDFToolkit.exe.
+Keep `_internal` beside it. GitHub sign-in is required for this private repository.
+The automatically listed “Source code” ZIP is for development.
+
+
 A Windows 11-first, personal-use desktop application for fully local PDF and
 image tools. **28 local tools** cover PDF/image conversion, PDF page operations,
 compression and optional Office conversion. See CAPABILITIES.md for exact support
