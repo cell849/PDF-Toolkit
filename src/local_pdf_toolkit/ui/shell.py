@@ -1,6 +1,6 @@
 """Tool library and focused workspaces; conversion behavior lives in MainWindow."""
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QEvent, QSize, Qt
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QLayout,
     QLineEdit,
     QListWidget,
     QProgressBar,
@@ -122,18 +123,57 @@ def tool_description(spec):
     return category(spec)
 
 
+class ToolCard(QPushButton):
+    """Size the whole card from its wrapped content rather than empty button text."""
+
+    def __init__(self):
+        super().__init__()
+        policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+        self.setSizePolicy(policy)
+
+    def minimumSizeHint(self):
+        return self.layout().totalMinimumSize().expandedTo(QSize(210, 164))
+
+    def sizeHint(self):
+        return QSize(260, self.heightForWidth(260)).expandedTo(self.minimumSizeHint())
+
+    def heightForWidth(self, width):
+        return max(164, self.layout().totalHeightForWidth(width))
+
+    def event(self, event):
+        result = super().event(event)
+        if event.type() == QEvent.Type.LayoutRequest and self.layout() is not None:
+            self._sync_height()
+        return result
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if self.layout() is not None:
+            self._sync_height()
+
+    def _sync_height(self):
+        height = self.heightForWidth(self.width())
+        if self.minimumHeight() != height:
+            self.setMinimumHeight(height)
+            if self.parentWidget() is not None:
+                self.parentWidget().update_row_heights()
+
+
 class ToolLibrary(QWidget):
     def __init__(self, window):
         super().__init__()
         self.window = window
         self.cards = []
         self.grid = QGridLayout(self)
+        self.grid.setSizeConstraint(QLayout.SizeConstraint.SetMinAndMaxSize)
         self.grid.setContentsMargins(0, 0, 0, 0)
         self.grid.setSpacing(14)
         self.grid.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.columns = 0
         for index, spec in enumerate(window._operations):
-            card = button("", lambda checked=False, i=index: window._select_tool(i))
+            card = ToolCard()
+            card.setCursor(Qt.CursorShape.PointingHandCursor)
+            card.clicked.connect(lambda checked=False, i=index: window._select_tool(i))
             card.setObjectName("toolCard")
             card.setMinimumHeight(164)
             card.setMinimumWidth(210)
@@ -147,7 +187,7 @@ class ToolLibrary(QWidget):
                 else spec.output_formats[0].value.upper(),
                 "badge",
             )
-            badge.setMaximumWidth(74)
+            badge.setWordWrap(False)
             content.addWidget(badge, alignment=Qt.AlignmentFlag.AlignLeft)
             title = label(spec.label.replace(" / resize / compress", ""), "section")
             content.addWidget(title)
@@ -165,6 +205,8 @@ class ToolLibrary(QWidget):
         self.reflow()
 
     def reflow(self):
+        for row in range(self.grid.rowCount()):
+            self.grid.setRowMinimumHeight(row, 0)
         while self.grid.count():
             self.grid.takeAt(0)
         visible = []
@@ -178,6 +220,17 @@ class ToolLibrary(QWidget):
             self.grid.addWidget(card, index // self.columns, index % self.columns)
         for col in range(3):
             self.grid.setColumnStretch(col, 1 if col < self.columns else 0)
+        self.update_row_heights()
+
+    def update_row_heights(self):
+        heights = {}
+        for index in range(self.grid.count()):
+            row = self.grid.getItemPosition(index)[0]
+            card = self.grid.itemAt(index).widget()
+            heights[row] = max(heights.get(row, 0), card.minimumHeight())
+        for row, height in heights.items():
+            self.grid.setRowMinimumHeight(row, height)
+        self.updateGeometry()
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

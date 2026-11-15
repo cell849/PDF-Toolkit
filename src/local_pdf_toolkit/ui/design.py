@@ -106,7 +106,7 @@ def apply_theme(window, dark=None):
             padding: 8px; font-weight: 700;
         }}
         QPushButton {{ background: {surface}; border: 1px solid {border};
-            border-radius: 7px; padding: 7px 10px; min-height: 18px; font-weight: 500;
+            border-radius: 7px; padding: 7px 10px; font-weight: 500;
         }}
         QPushButton:hover {{ border-color: {accent}; background: {selection}; }}
         QPushButton:pressed {{ background: {selection}; border-color: {accent}; }}

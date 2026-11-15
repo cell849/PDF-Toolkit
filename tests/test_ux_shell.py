@@ -1,12 +1,13 @@
 """Workspace structure, intentional numeric entry, and packaged identity."""
 
+import pytest
 from PySide6.QtCore import QPoint, QPointF, Qt
 from PySide6.QtGui import QIcon, QWheelEvent
-from PySide6.QtWidgets import QAbstractSpinBox, QListView, QWidget
+from PySide6.QtWidgets import QAbstractSpinBox, QLabel, QListView, QWidget
 
 from local_pdf_toolkit.app import build_registry
 from local_pdf_toolkit.ui.controls import ChoiceBox, NumericDoubleSpinBox, NumericSpinBox
-from local_pdf_toolkit.ui.design import DARK, LIGHT
+from local_pdf_toolkit.ui.design import DARK, LIGHT, apply_theme
 from local_pdf_toolkit.ui.icons import app_icon, resource_path
 from local_pdf_toolkit.ui.main_window import MainWindow
 from local_pdf_toolkit.ui.shell import matches_search
@@ -111,6 +112,34 @@ def test_task_search_matches_aliases_and_all_tokens(qapp):
     assert matches_search(operations["pdf.merge"], "join pdf")
     assert matches_search(operations["image.to_jpeg"], "shrink photo")
     assert not matches_search(operations["pdf.merge"], "join impossible")
+
+
+@pytest.mark.parametrize("dark", (False, True))
+@pytest.mark.parametrize("width", (760, 1636))
+def test_library_cards_keep_all_text_visible_after_theme_and_text_changes(qapp, dark, width):
+    window = MainWindow(build_registry())
+    window.resize(width, 860)
+    window.show()
+    try:
+        for percent in (100, 200, 100):
+            window._set_text_size(percent)
+            apply_theme(window, dark)
+            # Font and wrapping changes post nested layout requests.
+            for _ in range(8):
+                qapp.processEvents()
+            for card in window.library.cards:
+                assert card.isVisible() and card.height() >= 164
+                for text in card.findChildren(QLabel):
+                    assert text.isVisible() and text.width() > 0
+                    assert text.height() >= text.heightForWidth(text.width())
+                    assert card.rect().contains(text.geometry())
+            for index, first in enumerate(window.library.cards):
+                for second in window.library.cards[index + 1 :]:
+                    assert not first.geometry().intersects(second.geometry())
+    finally:
+        window.close()
+        window.deleteLater()
+        qapp.processEvents()
 
 
 def contrast(a, b):

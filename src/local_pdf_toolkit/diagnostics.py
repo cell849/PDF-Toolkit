@@ -6,7 +6,7 @@ from pathlib import Path
 import pymupdf
 from PySide6.QtCore import QSettings, QTimer
 from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QLabel
 
 from local_pdf_toolkit.app import build_registry
 from local_pdf_toolkit.core.jobs import JobController
@@ -24,10 +24,25 @@ def self_test():
         QSettings.setPath(
             QSettings.Format.IniFormat, QSettings.Scope.UserScope, str(root / "preferences")
         )
+        from local_pdf_toolkit.ui.design import apply_theme
         from local_pdf_toolkit.ui.icons import resource_path
         from local_pdf_toolkit.ui.main_window import MainWindow
 
         window = MainWindow(registry)
+        window.show()
+        valid_library = True
+        for dark in (False, True):
+            apply_theme(window, dark)
+            for _ in range(8):
+                app.processEvents()
+            for card in window.library.cards:
+                valid_library &= card.isVisible() and card.height() >= 164
+                for text in card.findChildren(QLabel):
+                    valid_library &= (
+                        text.isVisible()
+                        and text.height() >= text.heightForWidth(text.width())
+                        and card.rect().contains(text.geometry())
+                    )
         window._select_tool(
             next(
                 i for i, spec in enumerate(window._operations) if spec.operation_id == "pdf.to_jpeg"
@@ -38,7 +53,10 @@ def self_test():
         rendered = window.grab()
         artwork = QPixmap(str(resource_path("chevron-light.svg")))
         valid_ui = (
-            not rendered.isNull() and not window.windowIcon().isNull() and not artwork.isNull()
+            valid_library
+            and not rendered.isNull()
+            and not window.windowIcon().isNull()
+            and not artwork.isNull()
         )
         window.close()
         app.processEvents()
