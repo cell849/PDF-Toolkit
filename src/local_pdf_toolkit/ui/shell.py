@@ -345,7 +345,7 @@ def build_window(w):
     w.form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
     w.form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
     options_body.addWidget(basic)
-    w.advanced_toggle = QPushButton("▸ Advanced options")
+    w.advanced_toggle = QPushButton("▸ Advanced")
     w.advanced_toggle.setCheckable(True)
     w.advanced_toggle.setObjectName("disclosure")
     w.advanced_toggle.setAccessibleName("Show advanced options")
@@ -360,9 +360,7 @@ def build_window(w):
     w.advanced_widget.hide()
     w.advanced_toggle.toggled.connect(w.advanced_widget.setVisible)
     w.advanced_toggle.toggled.connect(
-        lambda expanded: w.advanced_toggle.setText(
-            "▾ Advanced options" if expanded else "▸ Advanced options"
-        )
+        lambda expanded: w.advanced_toggle.setText("▾ Advanced" if expanded else "▸ Advanced")
     )
     w.advanced_toggle.toggled.connect(
         lambda expanded: w.advanced_toggle.setAccessibleName(
@@ -390,9 +388,12 @@ def build_window(w):
     w.output_name.textEdited.connect(w._settings_changed)
     output_layout.addWidget(w.output_name)
     output_layout.addWidget(label("The file extension is chosen automatically.", "muted"))
-    w.open_button = button("Open output folder", w._open_directory)
+    w.open_button = button("Open folder", w._open_directory)
+    w.open_button.setAccessibleName("Open output folder")
+    w.open_button.setToolTip("Open the output folder")
     output_layout.addWidget(w.open_button)
-    w.report_button = button("View cleaning report", w._open_report)
+    w.report_button = button("View report", w._open_report)
+    w.report_button.setAccessibleName("View cleaning report")
     w.report_button.setEnabled(False)
     w.report_button.hide()
     output_layout.addWidget(w.report_button)
