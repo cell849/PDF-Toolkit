@@ -241,3 +241,11 @@ checks passed. This includes six new real LibreOffice import conversions for
 cleaned DOCX/XLSX/ODT/ODS/ODP/RTF, plus the existing nine forward-format engine
 checks. The coverage regression covers all current registered input formats;
 common unsupported families remain explicit rather than being declared clean.
+
+v0.5.0 published from b5c728a through Windows run
+https://github.com/cell849/tools/actions/runs/43663631001 . The Windows package
+suite passed **206 tests, 15 skipped** in 12.89 seconds; the skipped checks
+require a local LibreOffice engine and all 15 passed in the local integrated
+suite. Windows/Ubuntu matrix checks, lint, formatting, packaging and the frozen
+worker self-test succeeded. The private release contains the Windows ZIP at
+https://github.com/cell849/tools/releases/tag/v0.5.0 .
