@@ -27,3 +27,4 @@ class FileFormat(StrEnum):
     BMP = "bmp"
     GIF = "gif"
     MARKDOWN = "md"
+    JSON = "json"

@@ -97,3 +97,16 @@ outputs and in-app reports, leaving originals unchanged.
 See [the complete coverage audit](FORMAT_COVERAGE.md) for legacy files, templates,
 other Office applications and remaining media formats. A coverage regression
 checks that every input format already accepted by this app is accounted for.
+
+## Inspecting and previewing
+
+“Inspect metadata / compare copies” accepts one supported document/image, or two
+files ordered original then cleaned. It reports parsed field/category counts and
+before/after differences. Private values, custom field names and source filenames
+are excluded. Counts cover recognized fields, not a proof of anonymity; visible
+content and unrecognized structures require separate review.
+
+“Preview selected” renders a page in a separate worker. PDFs and supported images
+work locally; Office previews require installed LibreOffice and may differ with
+available fonts. Page previews are bounded to 1400 pixels and kept in a temporary
+directory removed when the viewer closes. Original files are unchanged.

@@ -250,8 +250,16 @@ def build_window(w):
     w.remove_button = button("Remove", w._remove)
     w.retry_button = button("Retry failed", w._retry)
     w.cancel_selected = button("Cancel selected", w._cancel_one)
+    w.preview_button = button("Preview selected", w._open_preview)
     for index, control in enumerate(
-        (w.up_button, w.down_button, w.remove_button, w.retry_button, w.cancel_selected)
+        (
+            w.up_button,
+            w.down_button,
+            w.remove_button,
+            w.retry_button,
+            w.cancel_selected,
+            w.preview_button,
+        )
     ):
         file_actions.addWidget(control, index // 3, index % 3)
     files_layout.addLayout(file_actions)
@@ -389,6 +397,7 @@ def add_menus(w):
         ("Cancel selected", w._cancel_one),
         ("Open output folder", w._open_directory),
         ("View cleaning report", w._open_report),
+        ("Preview selected", w._open_preview),
     ):
         action = QAction(title, w)
         action.triggered.connect(callback)

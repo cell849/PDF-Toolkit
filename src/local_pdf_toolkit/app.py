@@ -15,6 +15,7 @@ def build_registry():
     from local_pdf_toolkit.converters.compress import PdfCompressConverter
     from local_pdf_toolkit.converters.image_metadata import ImageMetadataConverter
     from local_pdf_toolkit.converters.images import image_converters
+    from local_pdf_toolkit.converters.inspector import MetadataInspector
     from local_pdf_toolkit.converters.odf_metadata import OdfMetadataConverter
     from local_pdf_toolkit.converters.office_metadata import OfficeMetadataConverter
     from local_pdf_toolkit.converters.office_pdf import office_converters
@@ -41,6 +42,7 @@ def build_registry():
             TextMetadataConverter(),
         )
     )
+    converters.append(MetadataInspector())
     for converter in converters:
         registry.register(converter)
     return registry

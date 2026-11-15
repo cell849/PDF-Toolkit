@@ -63,6 +63,19 @@ class MainWindow(QMainWindow):
             )
             self.form.setRowWrapPolicy(policy)
 
+    def _open_preview(self):
+        if self._active:
+            return
+        index = self.files.currentRow()
+        if not 0 <= index < len(self._paths):
+            self.statusBar().showMessage("Choose a file in the list to preview.")
+            return
+        from local_pdf_toolkit.ui.preview import PreviewDialog
+
+        dialog = PreviewDialog(self._paths[index], self)
+        dialog.exec()
+        dialog.deleteLater()
+
     def _open_report(self):
         import json
 
@@ -100,7 +113,20 @@ class MainWindow(QMainWindow):
                 "IMPORTANT LIMITS",
                 str(report.get("limits", "")),
             ]
-        except (OSError, ValueError, TypeError):
+            for index, inspection in enumerate(report.get("inspection", []), 1):
+                lines.extend(["", f"FILE {index} ({inspection.get('format', 'Unknown')})"])
+                lines.extend(
+                    f"{key}: {value}" for key, value in inspection.get("counts", {}).items()
+                )
+                if not inspection.get("counts"):
+                    lines.append("No fields detected in the supported structures.")
+            comparison = report.get("comparison", [])
+            if comparison:
+                lines.extend(["", "BEFORE → AFTER"])
+                lines.extend(
+                    f"{row['category']}: {row['before']} → {row['after']}" for row in comparison
+                )
+        except (OSError, ValueError, TypeError, KeyError, AttributeError):
             self.statusBar().showMessage(
                 "Could not read the cleaning report. Check the output folder."
             )
@@ -160,6 +186,10 @@ class MainWindow(QMainWindow):
             self.tool_hint.setText(
                 f"Supported: {formats}. Separate copy and report. Personal content can remain."
             )
+            if spec.operation_id == "metadata.inspect":
+                self.tool_hint.setText(
+                    "Inspect one file, or compare original then cleaned copy. Values stay masked."
+                )
         for option in spec.options:
             if option.choices:
                 widget = QComboBox()
@@ -225,6 +255,7 @@ class MainWindow(QMainWindow):
             self.remove_button,
             self.retry_button,
             self.cancel_selected,
+            self.preview_button,
         ):
             button.setVisible(bool(self._paths))
         self.file_heading.setText(f"Files · {len(self._paths)}" if self._paths else "Files")
