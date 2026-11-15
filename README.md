@@ -11,7 +11,7 @@ The automatically listed “Source code” ZIP is for development.
 
 
 A Windows 11-first, personal-use desktop application for fully local PDF and
-image tools. **31 local tools** cover PDF/image conversion, PDF page operations,
+image tools. **36 local tools** cover PDF/image conversion, PDF page operations,
 compression and optional Office conversion. See CAPABILITIES.md for exact support
 and fidelity limits. Drag-and-drop, options, progress and cancellation are included.
 Rendering uses a separate process; multiple imported PDFs run sequentially.
@@ -150,3 +150,6 @@ Metadata cleaning is in the **Privacy** category: images, supported editable
 PowerPoint files and flattened PDFs. Each clean copy has a neutral filename and
 an integrated cleaning report. See [metadata support and limits](docs/METADATA.md)
 before use; visible personal content is not automatically anonymized.
+
+Office metadata coverage now includes DOCX/XLSX, ODT/ODS/ODP and basic RTF.
+See [format coverage](docs/FORMAT_COVERAGE.md) and [proposed useful tools](docs/TOOL_IDEAS.md).

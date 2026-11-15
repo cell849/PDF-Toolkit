@@ -1,17 +1,19 @@
-Adds a **Privacy** category in the same desktop style:
+Closes the missing Office metadata-cleaning gaps while keeping the desktop style:
 
-- Clean metadata from JPEG/PNG/WebP/TIFF/BMP/single-frame GIF.
-- Clean supported editable PPTX properties, notes/comments, ZIP fields, and embedded raster images.
-- Rebuild PDF pages into a fresh flattened PDF without original hidden objects/attachments.
-- Neutral unique output filenames and in-app cleaning reports. Originals are preserved.
+- DOCX: properties, reviewer/comments, normal text revision history, ZIP fields and supported images.
+- XLSX: properties, comments, printer/cache metadata, ZIP fields and supported images; formulas/normal formatting retained.
+- ODT/ODS/ODP: properties, settings, comments/change history, thumbnails and supported images.
+- Basic RTF: known property/reviewer/generator/history groups, with unsupported payloads rejected.
+- TXT/CSV/MD: separately labelled neutral-name UTF-8 copy; all textual content remains.
+- A coverage regression accounts for every currently accepted input format.
+- docs/FORMAT_COVERAGE.md lists support and common gaps; docs/TOOL_IDEAS.md ranks useful additions.
 
-Image cleaning re-encodes JPEG and removes ICC profiles; color appearance can
-change. PPTX notes/comments are deleted in the copy; complex/linked/active
-packages are rejected. The stronger PDF cleaner removes selectable text and
-vector/editable structure. See docs/METADATA.md for exact scope and exclusions.
-Visible personal content and filesystem metadata can remain. No file is labeled
-anonymous, and unsupported formats are not silently passed through.
+36 tools total. Metadata cleaning is not an anonymity guarantee. Visible content,
+style/bookmark/sheet labels, named ranges, headers/footers and filesystem data can
+remain. Complex/linked/active packages, unsupported hidden/protected content and
+unsupported revisions are rejected. Originals are preserved. Read the in-app policy.
 
 Download **LocalPDFToolkit-Windows-x64.zip**, extract once, and open
-**LocalPDFToolkit/LocalPDFToolkit.exe**. Keep `_internal` beside it.
-This remains a private unsigned personal-use build.
+**LocalPDFToolkit/LocalPDFToolkit.exe** with `_internal` beside it.
+Private unsigned personal-use build. LibreOffice is separate for Office-to-PDF;
+the new editable package cleaners do not require LibreOffice at runtime.

@@ -103,3 +103,16 @@ retained; unknown/active/complex media rejected; PDF source hidden objects not
 copied; reports contain no source personal values; cancellation and collisions
 leave no partial output. New tools share the Privacy sidebar category and
 integrated report viewer.
+
+## v0.5.0 — Office metadata gaps and format audit
+
+User requested missing Office cleaners and a broader file-type audit. Add DOCX,
+XLSX, packaged OpenDocument ODT/ODS/ODP and conservative RTF cleanup, with neutral
+TXT/CSV/MD copying explicitly distinguished from embedded-metadata removal.
+Keep desktop styling and all previous functions. Test content/style/formula
+preservation, ordinary Word revision acceptance, unsupported-feature failures,
+private-value removal, package fields, output rollback and actual Office loading.
+
+Registered input formats must all have an explicit privacy policy; track common
+unsupported formats in docs/FORMAT_COVERAGE.md. New tool suggestions are proposals
+only, ranked in docs/TOOL_IDEAS.md, not automatically added to implementation.

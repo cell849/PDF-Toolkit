@@ -156,8 +156,9 @@ class MainWindow(QMainWindow):
             else "Each file is processed separately. Originals stay untouched."
         )
         if privacy:
+            formats = ", ".join(kind.value.upper() for kind in spec.input_formats)
             self.tool_hint.setText(
-                "Creates a clean copy and a report. Visible personal content can remain."
+                f"Supported: {formats}. Separate copy and report. Personal content can remain."
             )
         for option in spec.options:
             if option.choices:

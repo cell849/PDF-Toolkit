@@ -102,6 +102,11 @@ def test_privacy_tools_share_native_workspace_and_report(qapp, tmp_path):
             "metadata.clean_image",
             "metadata.clean_pptx",
             "metadata.clean_pdf",
+            "metadata.clean_docx",
+            "metadata.clean_xlsx",
+            "metadata.clean_odf",
+            "metadata.clean_rtf",
+            "metadata.neutral_text",
         }
         window._select_tool(
             next(
@@ -137,3 +142,20 @@ def test_privacy_tools_share_native_workspace_and_report(qapp, tmp_path):
         assert "EXIF/GPS" in observed[0] and "Visible text remains" in observed[0]
     finally:
         window.close()
+
+
+def test_existing_input_formats_have_an_explicit_privacy_policy():
+    operations = build_registry().list_operations()
+    accepted = {
+        kind
+        for spec in operations
+        if not spec.operation_id.startswith("metadata.")
+        for kind in spec.input_formats
+    }
+    privacy = {
+        kind
+        for spec in operations
+        if spec.operation_id.startswith("metadata.")
+        for kind in spec.input_formats
+    }
+    assert accepted <= privacy

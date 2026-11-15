@@ -55,3 +55,9 @@ verification boundaries and exclusions are in docs/METADATA.md. This is metadata
 cleaning rather than a universal anonymizer. The app lists limitations before
 running and includes a report viewer; raw private metadata is never copied into
 reports. Originals remain unchanged.
+
+## v0.5.0 Office privacy expansion
+
+36 tools total. Added DOCX/XLSX, OpenDocument and basic RTF cleaners plus a neutral-name
+text copy tool. Every currently accepted input format has an explicit privacy policy.
+See docs/FORMAT_COVERAGE.md for payload restrictions and common unsupported formats.

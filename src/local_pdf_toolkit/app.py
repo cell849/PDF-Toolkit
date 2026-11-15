@@ -15,11 +15,14 @@ def build_registry():
     from local_pdf_toolkit.converters.compress import PdfCompressConverter
     from local_pdf_toolkit.converters.image_metadata import ImageMetadataConverter
     from local_pdf_toolkit.converters.images import image_converters
+    from local_pdf_toolkit.converters.odf_metadata import OdfMetadataConverter
+    from local_pdf_toolkit.converters.office_metadata import OfficeMetadataConverter
     from local_pdf_toolkit.converters.office_pdf import office_converters
     from local_pdf_toolkit.converters.pdf_metadata import PdfMetadataConverter
     from local_pdf_toolkit.converters.pdf_office import pdf_office_converters
     from local_pdf_toolkit.converters.pdf_tools import pdf_tool_converters
     from local_pdf_toolkit.converters.pptx_metadata import PptxMetadataConverter
+    from local_pdf_toolkit.converters.text_metadata import TextMetadataConverter
 
     registry = ConverterRegistry()
     converters = [PdfImagesConverter(fmt) for fmt in (FileFormat.JPEG, FileFormat.PNG)]
@@ -29,6 +32,15 @@ def build_registry():
     converters.extend(office_converters())
     converters.extend(pdf_office_converters())
     converters.extend((ImageMetadataConverter(), PptxMetadataConverter(), PdfMetadataConverter()))
+    converters.extend(
+        (
+            OfficeMetadataConverter(FileFormat.DOCX),
+            OfficeMetadataConverter(FileFormat.XLSX),
+            OdfMetadataConverter(),
+            TextMetadataConverter(rtf=True),
+            TextMetadataConverter(),
+        )
+    )
     for converter in converters:
         registry.register(converter)
     return registry
@@ -42,7 +54,7 @@ def main() -> int:
         return self_test()
     app = QApplication(sys.argv)
     app.setApplicationName("Local PDF Toolkit")
-    app.setApplicationVersion("0.4.0")
+    app.setApplicationVersion("0.5.0")
     window = MainWindow(build_registry())
     window.show()
     return app.exec()

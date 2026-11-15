@@ -77,3 +77,23 @@ backup records and cloud-sync history. The original file still exists. Visible
 personal content, hidden Office content and steganography require separate
 review/redaction. A successful job is not an anonymity certificate or a claim
 that no personal information exists anywhere in the file or computer.
+
+## Word, Excel and other Office files — v0.5.0
+
+The Privacy category now includes DOCX, XLSX, ODT/ODS/ODP and basic RTF tools.
+They preserve editable content where supported while deleting documented
+properties, reviewer/comment/history fields, ZIP metadata and supported embedded
+raster-image metadata. DOCX ordinary text changes are accepted in the copy;
+complex table revisions/content controls are rejected. Excel formulas, visible
+cells and normal formatting remain; protected/hidden content is rejected.
+OpenDocument properties/settings/comments/history/thumbnails are removed. RTF
+cleanup is limited to basic text/formatting files and rejects unsupported payloads.
+
+TXT/CSV/MD have a separate neutral-name copy tool whose policy explicitly says
+textual contents are unchanged. It does not claim to scrub Markdown frontmatter,
+CSV comments or personal names in text. All tools still create neutral unique
+outputs and in-app reports, leaving originals unchanged.
+
+See [the complete coverage audit](FORMAT_COVERAGE.md) for legacy files, templates,
+other Office applications and remaining media formats. A coverage regression
+checks that every input format already accepted by this app is accounted for.

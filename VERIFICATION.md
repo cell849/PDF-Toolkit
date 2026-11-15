@@ -216,3 +216,28 @@ worker self-test passed and the private v0.4.0 release asset was uploaded. The
 new image/PPTX/PDF metadata tests and in-app report test are included in CI.
 Manual Windows PowerPoint rendering/accessibility verification remains outside
 these automated checks; the documented unsupported PPTX subset is intentional.
+
+## v0.5.0 Office metadata gaps and common-format audit
+
+Added conservative DOCX/XLSX and ODT/ODS/ODP cleaning, basic RTF metadata removal
+and explicitly labelled neutral TXT/CSV/MD copying. The registry now has 36 tools.
+An input-format coverage regression checks that every currently accepted
+conversion input has an explicit privacy policy. docs/FORMAT_COVERAGE.md lists
+common unsupported families; docs/TOOL_IDEAS.md proposes additions without
+implementing them. Desktop style and previous converters are retained.
+
+Tests exercise Word text/style/header/revision/image behavior, Excel formulas,
+formatting/comments, hidden/linked/protected/complex rejection, ZIP fields,
+OpenDocument formula namespaces, RTF escaping/control handling, cancellation,
+collisions and actual Office-engine import. Real LibreOffice identified a DOCX
+interoperability issue with generic generated namespace prefixes; canonical
+Office prefixes fixed it and the real-engine regression is retained. New
+cleaners use existing dependencies and preserve originals. Unsupported payloads
+fail instead of receiving a clean label. Content labels and visible/hidden data
+outside the documented policy are not claimed anonymous.
+
+v0.5.0 local integrated result: **221 passed in 59.09 seconds**; Ruff and format
+checks passed. This includes six new real LibreOffice import conversions for
+cleaned DOCX/XLSX/ODT/ODS/ODP/RTF, plus the existing nine forward-format engine
+checks. The coverage regression covers all current registered input formats;
+common unsupported families remain explicit rather than being declared clean.
