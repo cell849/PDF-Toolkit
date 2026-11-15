@@ -40,7 +40,7 @@ def test_search_cannot_run_hidden_operation(qapp):
 def test_library_cards_categories_and_compact_workspace(qapp):
     from PySide6.QtCore import Qt
     from PySide6.QtTest import QTest
-    from PySide6.QtWidgets import QScrollArea
+    from PySide6.QtWidgets import QScrollArea, QWidget
 
     window = MainWindow(build_registry())
     window.show()
@@ -72,10 +72,21 @@ def test_library_cards_categories_and_compact_workspace(qapp):
             assert field.geometry().top() > label.geometry().bottom()
             previous_bottom = field.geometry().bottom()
         for scroll in window.workspace.findChildren(QScrollArea):
+            oversized = [
+                (
+                    type(child).__name__,
+                    child.accessibleName() or child.objectName(),
+                    child.minimumSizeHint().width(),
+                    child.minimumWidth(),
+                    child.width(),
+                )
+                for child in scroll.widget().findChildren(QWidget)
+                if child.minimumSizeHint().width() > 170
+            ]
             assert scroll.horizontalScrollBar().maximum() == 0, (
                 f"{scroll.widget().objectName()}: viewport={scroll.viewport().width()}, "
                 f"content={scroll.widget().width()}, "
-                f"minimum={scroll.widget().minimumSizeHint().width()}"
+                f"minimum={scroll.widget().minimumSizeHint().width()}, children={oversized}"
             )
         window._set_active(True)
         window._show_library()

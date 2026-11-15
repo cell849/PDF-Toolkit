@@ -17,11 +17,16 @@ def finish(window, start):
     timeout.timeout.connect(loop.quit)
     start()
     timer.start()
-    timeout.start(15000)
+    # Metadata inspection adds real spawned processes; hosted Windows cold starts vary.
+    timeout.start(30000)
     loop.exec()
     timer.stop()
     timeout.stop()
-    assert not window._active
+    assert not window._active, (
+        f"conversion={window.jobs.running}, inspection={window._probe_jobs.running}, "
+        f"preview={window.document_preview.running}, deferred={window._requested_start}, "
+        f"pending={len(window._pending)}"
+    )
 
 
 def test_batch_isolates_error_and_retries(qapp, fixture_dir, tmp_path):
