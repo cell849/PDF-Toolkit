@@ -105,6 +105,14 @@ class PdfCompressConverter:
                                     - 1
                                 )
                                 render_dpi = min(dpi, pixel_dpi)
+                                # Native rasters round each dimension up separately. An
+                                # area-only estimate is unsafe for very thin/long pages.
+                                while render_dpi >= 10 and (
+                                    math.ceil(page.rect.width * render_dpi / 72)
+                                    * math.ceil(page.rect.height * render_dpi / 72)
+                                    > MAX_PIXELS
+                                ):
+                                    render_dpi -= 1
                                 if render_dpi < 10:
                                     raise ConversionError(
                                         ErrorCode.INVALID_INPUT,

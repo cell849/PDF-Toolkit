@@ -31,11 +31,23 @@ class OutputTransaction:
         return self
 
     def __exit__(self, kind, value, traceback):
+        cleanup_error = None
         try:
             if kind is not None:
                 for path in self._published:
-                    staged = self.staging / path.name
-                    if path.exists() and path.samefile(staged):
-                        path.unlink()
+                    try:
+                        staged = self.staging / path.name
+                        if path.samefile(staged):
+                            path.unlink()
+                    except FileNotFoundError:
+                        # Another process may already have removed the output.
+                        pass
+                    except OSError as exc:
+                        # A locked output must not prevent cleanup of other files.
+                        if cleanup_error is None:
+                            cleanup_error = exc
         finally:
             self._temp.cleanup()
+        if cleanup_error is not None:
+            cleanup_error.add_note("Incomplete outputs remain; check the output folder.")
+            raise cleanup_error

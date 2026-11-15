@@ -71,6 +71,9 @@ def open_image(path):
 
 
 def opaque(image):
+    if "A" not in image.getbands() and "transparency" not in image.info:
+        # Still return an owned copy; the caller closes the original image.
+        return image.convert("RGB")
     with image.convert("RGBA") as rgba, rgba.getchannel("A") as alpha:
         background = Image.new("RGB", rgba.size, "white")
         background.paste(rgba, mask=alpha)
