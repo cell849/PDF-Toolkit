@@ -103,6 +103,18 @@ def test_cancel_or_close_while_start_waits_for_preview_exit(race_workspace, qapp
         assert window.start_button.isEnabled()
 
 
+@pytest.mark.parametrize("continuation", ("_next_inspection", "_resource_idle"))
+def test_deferred_start_stays_busy_until_continuation(race_workspace, qapp, continuation):
+    window = race_workspace
+    window._requested_start = True
+    window._set_active(True)
+    getattr(window, continuation)()
+    assert window._active and window._requested_start
+    qapp.processEvents()
+    assert window._active and window.jobs.running
+    assert not window._requested_start
+
+
 def test_bulk_name_normalizes_typed_extension_before_adding_index(race_workspace):
     window = race_workspace
     window.output_name.setText("Invoice.PNG")

@@ -160,9 +160,7 @@ class WorkspaceBehavior:
             return
         if not self._probe_queue:
             if self._requested_start:
-                self._requested_start = False
-                self._set_active(False)
-                QTimer.singleShot(0, self._start)
+                QTimer.singleShot(0, self._resume_requested_start)
             return
         from local_pdf_toolkit.converters.file_probe import FileProbeConverter
 
@@ -762,9 +760,16 @@ class WorkspaceBehavior:
             and not self._probe_jobs.running
             and not self.document_preview.running
         ):
-            self._requested_start = False
-            self._set_active(False)
-            QTimer.singleShot(0, self._start)
+            QTimer.singleShot(0, self._resume_requested_start)
+
+    def _resume_requested_start(self):
+        if not self._requested_start or self._closing or self._stopping:
+            return
+        self._requested_start = False
+        # Keep the workspace busy until the continuation actually runs. Exposing
+        # an idle event-loop turn here permits duplicate actions and early exit.
+        self._set_active(False)
+        self._start()
 
     def _close_workspace(self):
         self._requested_start = False

@@ -11,8 +11,8 @@ The automatically listed “Source code” ZIP is for development.
 
 
 A Windows 11-first, personal-use desktop application for fully local PDF and
-image tools. **36 local tools** cover PDF/image conversion, PDF page operations,
-compression and optional Office conversion. See CAPABILITIES.md for exact support
+image tools. Local tools cover PDF/image conversion, PDF page operations,
+compression, metadata cleaning and optional Office conversion. See CAPABILITIES.md for exact support
 and fidelity limits. Drag-and-drop, options, progress and cancellation are included.
 Rendering uses a separate process; multiple imported PDFs run sequentially.
 
@@ -66,7 +66,7 @@ normal interactive launch requires a desktop and Qt system libraries.
 
 1. Add PDFs or drop local files into the window.
 2. Select PDF to JPEG or PDF to PNG. Choose pages (`all` or `1,3-5`),
-   72/150/300 DPI, and quality (JPEG) or transparency (PNG).
+   a preset or custom DPI, and quality (JPEG) or transparency (PNG).
 3. Choose an existing output folder and press Convert.
 4. Follow each file's status. Open the output folder to view results.
 
@@ -105,16 +105,18 @@ sandbox or an absolute memory/time limit on native PDF parsing.
 M2, M3 and M5 are implemented. Move files up/down before merging or creating an
 image PDF. Single-input tools run each file as a separate job; multi-input tools
 combine the entire list. Cancel selected affects that job; Cancel stops the batch.
-Retry failed/cancelled reuses the previous job options. Double-click a completed
+Retry failed/cancelled uses your current options and preserves other successes. Double-click a completed
 file row to open its first result. Tool search filters the available operations.
 
 For Office → PDF, install LibreOffice locally on Windows. It is detected in PATH
 or the standard Program Files location. It is not bundled. See CAPABILITIES.md
 for restrictions. Reverse Office exports require no LibreOffice but are lossy.
 
-PDF compression has lossless and explicitly rasterized modes. Image converters
-have maximum width/height and KiB controls. Targets are upper bounds and can
-require reduced quality/resolution; no promise of exact byte size is made.
+PDF compression has lossless and explicitly rasterized modes. Image tools offer
+custom dimensions, DPI and editable size targets with units or a percentage of
+the original. Targets are upper bounds. Preserving resolution is the default;
+an unreachable target produces a clear error. Optional downscaling can help
+reach smaller targets. See each tool's options for supported controls.
 
 Reproduce the 100-page baseline with:
 
@@ -127,7 +129,8 @@ M4 build instructions and platform limits are in packaging/README.md.
 Runtime dependencies are pinned in pyproject.toml. `uv.lock` records the full
 resolved dependency set; contributors with uv can use `uv sync --extra dev
 --frozen`. Pip commands above pin direct dependencies, but do not consume the
-uv lock. The build produces Python packages, not a Windows standalone installer.
+uv lock. The Windows packaging workflow builds a portable desktop app ZIP;
+Python package builds are also available for development.
 
 No distribution license has been selected. Keep this project for personal use
 until that decision and dependency-license review are complete. PyMuPDF is
