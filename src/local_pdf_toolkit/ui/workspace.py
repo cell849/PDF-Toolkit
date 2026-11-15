@@ -376,6 +376,14 @@ class WorkspaceBehavior:
             )
             item.setIcon(QIcon(thumbnail))
 
+    def _show_status(self, message):
+        self.feedback.setText(message)
+        self.feedback.setVisible(
+            self.pages.currentWidget() == self.workspace
+            and bool(message)
+            and message != self.result_title.text()
+        )
+
     def _set_result(self, state, title, detail):
         if not self._ux_ready:
             return
@@ -384,6 +392,7 @@ class WorkspaceBehavior:
         self.result_banner.style().polish(self.result_banner)
         self.result_title.setText(title)
         self.feedback.setText(title)
+        self.feedback.hide()
         self.result_detail.setText(detail)
         self.result_retry.setVisible(bool(self._failed) and not self._active)
         self.result_retry.setText(

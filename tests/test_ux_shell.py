@@ -112,6 +112,39 @@ def test_workspace_keeps_result_feedback_and_options_reachable(qapp):
         qapp.processEvents()
 
 
+def test_library_hides_job_chrome_and_grouped_menu_keeps_every_tool(qapp):
+    window = MainWindow(build_registry())
+    window.show()
+    try:
+        qapp.processEvents()
+        assert not window.progress.isVisible()
+        assert not window.feedback.isVisible()
+        assert not window.cancel_button.isVisible()
+        actions = [
+            action for menu in window.tool_category_menus.values() for action in menu.actions()
+        ]
+        assert sorted(action.text() for action in actions) == sorted(
+            spec.label for spec in window._operations
+        )
+        action = next(action for action in actions if action.text() == "Compress PDF")
+        action.trigger()
+        assert window.pages.currentWidget() == window.workspace
+        assert not window.cancel_button.isVisible()
+        window._set_result("error", "Could not save", "Choose another folder.")
+        assert window.result_banner.isVisible() and window.result_adjust.isVisible()
+        assert not window.feedback.isVisible()
+        window.statusBar().showMessage("Choose a local folder")
+        assert window.feedback.isVisible()
+        window._set_active(True)
+        assert window.progress.isVisible() and window.cancel_button.isVisible()
+        window._set_active(False)
+        assert not window.progress.isVisible()
+    finally:
+        window.close()
+        window.deleteLater()
+        qapp.processEvents()
+
+
 def test_task_search_matches_aliases_and_all_tokens(qapp):
     operations = {spec.operation_id: spec for spec in build_registry().list_operations()}
     assert matches_search(operations["pdf.merge"], "join pdf")

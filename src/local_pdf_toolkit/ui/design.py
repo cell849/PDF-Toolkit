@@ -91,9 +91,10 @@ def apply_theme(window, dark=None):
         QWidget#options, QWidget#inlineControl, QSlider, QCheckBox {{
             background: transparent;
         }}
-        QLabel#title {{ font-size: {body_size + 11}pt; font-weight: 650; }}
+        QLabel#title {{ font-size: {body_size + 7}pt; font-weight: 600; }}
         QLabel#section {{ font-size: {body_size + 2}pt; font-weight: 600; }}
-        QLabel#resultTitle, QLabel#summary {{ font-weight: 600; }}
+        QLabel#resultTitle {{ font-weight: 600; }}
+        QLabel#summary {{ color: {secondary}; }}
         QLabel#muted {{ color: {secondary}; }}
         QLabel#eyebrow {{ color: {secondary}; font-size: {body_size}pt; font-weight: 600; }}
         QLabel#engineBadge {{ color: {secondary}; font-size: {body_size}pt;
@@ -103,8 +104,8 @@ def apply_theme(window, dark=None):
             border: 3px solid {accent}; border-radius: 12px;
             font-size: {body_size + 8}pt; font-weight: 600;
         }}
-        QLabel#badge {{ background: {selection}; color: {accent}; border-radius: 8px;
-            padding: 8px; font-weight: 700;
+        QLabel#badge {{ background: transparent; color: {accent};
+            padding: 0; font-weight: 600;
         }}
         QPushButton {{ background: {surface}; border: 1px solid {border};
             border-radius: 7px; padding: 7px 10px; font-weight: 500;
@@ -126,6 +127,7 @@ def apply_theme(window, dark=None):
         QPushButton#disclosure:focus {{ border-color: {accent}; }}
         QPushButton#toolCard {{ text-align: left; padding: 0; }}
         QPushButton#toolCard:hover {{ background: {surface}; border: 2px solid {accent}; }}
+        QFrame#resultBanner[state="ready"] {{ background: transparent; border: 0; }}
         QListWidget, QListView, QTableView {{ background: {surface}; color: {text};
             border: 1px solid {border}; border-radius: 7px; padding: 4px; outline: 0;
             selection-background-color: {selection}; selection-color: {text};

@@ -524,6 +524,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
 
     def _set_active(self, active):
         self._active = active
+        self.progress.setVisible(active and self.pages.currentWidget() == self.workspace)
         if self._ux_ready:
             self.document_preview.set_busy(active)
         for widget in (
@@ -753,9 +754,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                 if visible
                 else "No matching tools. Try another search or category."
             )
-            self.library_title.setText(
-                "Your document workspace." if self._category == "All tools" else self._category
-            )
+            self.library_title.setText(self._category)
         if text:
             self.pages.setCurrentWidget(self.dashboard)
 

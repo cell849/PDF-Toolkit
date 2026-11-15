@@ -151,7 +151,11 @@ class ToolCard(QPushButton):
         height += max(0, content.count() - 1) * content.spacing()
         for index in range(content.count()):
             text = content.itemAt(index).widget()
-            height += max(text.sizeHint().height(), text.heightForWidth(available))
+            height += (
+                text.heightForWidth(available)
+                if text.hasHeightForWidth()
+                else text.sizeHint().height()
+            )
         return max(164, height)
 
     def event(self, event):
@@ -171,7 +175,11 @@ class ToolCard(QPushButton):
         available = max(1, self.width() - margins.left() - margins.right())
         for index in range(content.count()):
             text = content.itemAt(index).widget()
-            text.setMinimumHeight(max(text.sizeHint().height(), text.heightForWidth(available)))
+            text.setFixedHeight(
+                text.heightForWidth(available)
+                if text.hasHeightForWidth()
+                else text.sizeHint().height()
+            )
         height = self.heightForWidth(self.width())
         if self.minimumHeight() != height:
             self.setMinimumHeight(height)
@@ -201,6 +209,8 @@ class ToolLibrary(QWidget):
             card.setToolTip(" ".join(spec.limitations) or f"Open {spec.label}")
             content = QVBoxLayout(card)
             content.setContentsMargins(18, 18, 18, 18)
+            content.setSpacing(8)
+            content.setAlignment(Qt.AlignmentFlag.AlignTop)
             badge = label(
                 "META"
                 if spec.operation_id.startswith("metadata.")
@@ -221,6 +231,7 @@ class ToolLibrary(QWidget):
                 content.addWidget(dependency)
             for child in card.findChildren(QLabel):
                 child.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+                child.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
             self.cards.append(card)
         self.reflow()
 
@@ -278,16 +289,14 @@ def build_window(w):
     side.setContentsMargins(18, 26, 18, 20)
     side.setSpacing(18)
     side.addWidget(label("PDF Toolkit", "section"))
-    side.addWidget(label("A place for your documents.", "muted"))
-    side.addSpacing(16)
-    side.addWidget(label("LIBRARY", "eyebrow"))
+    side.addSpacing(6)
+    side.addWidget(label("Library", "eyebrow"))
     w.navigation = QListWidget()
     w.navigation.setObjectName("navigation")
     w.navigation.setAccessibleName("Tool categories")
     w.navigation.addItems(CATEGORIES)
     side.addWidget(w.navigation)
-    side.addWidget(label("ON YOUR COMPUTER", "eyebrow"))
-    side.addWidget(label("Local processing.\nYour files stay yours.", "muted"))
+    side.addWidget(label("Processed on your computer", "muted"))
     root.addWidget(sidebar)
     canvas = QWidget()
     canvas.setObjectName("canvas")
@@ -317,10 +326,9 @@ def build_window(w):
     w.dashboard = QWidget()
     home = QVBoxLayout(w.dashboard)
     home.setContentsMargins(0, 0, 0, 0)
-    home.setSpacing(18)
-    w.library_title = label("Your document workspace.", "title")
+    home.setSpacing(12)
+    w.library_title = label("All tools", "title")
     home.addWidget(w.library_title)
-    home.addWidget(label("Convert, organize and refine. Everything happens locally.", "muted"))
     w.library_count = label(f"{len(w._operations)} tools · Choose one to get started", "eyebrow")
     home.addWidget(w.library_count)
     w.library = ToolLibrary(w)
@@ -334,7 +342,7 @@ def build_window(w):
     w.workspace = QWidget()
     work = QVBoxLayout(w.workspace)
     work.setContentsMargins(0, 0, 0, 0)
-    work.setSpacing(18)
+    work.setSpacing(12)
     w.tool_title = label("Choose a tool", "title")
     work.addWidget(w.tool_title)
     w.tool_hint = label("Add your files, choose your options, and save a new copy.", "muted")
@@ -510,7 +518,7 @@ def build_window(w):
         if w.files.currentItem() is not None
         else None,
     )
-    w.result_compare = button("Compare before / after", w._open_comparison)
+    w.result_compare = button("Compare", w._open_comparison)
     w.result_compare.setAccessibleName("Compare original and converted file")
     w.compare_button = w.result_compare
     w.result_retry = button("Retry failed", w._retry)
@@ -566,7 +574,7 @@ def build_window(w):
     w.operation_list.currentRowChanged.connect(w._options)
     w.operation_list.setCurrentRow(0 if w._operations else -1)
     w._options(w.operation_list.currentRow())
-    w.statusBar().messageChanged.connect(w.feedback.setText)
+    w.statusBar().messageChanged.connect(w._show_status)
     w.statusBar().hide()
     w.statusBar().showMessage("Choose a tool to get started. Files are processed locally.")
     w.back_button.hide()
@@ -576,6 +584,7 @@ def build_window(w):
     w.pages.currentChanged.connect(lambda _: sync_workspace(w))
     w._sync_files()
     add_menus(w)
+    sync_workspace(w)
     apply_theme(w)
     # Color changes follow the operating system, without an app-specific toggle.
     from PySide6.QtWidgets import QApplication
@@ -587,8 +596,12 @@ def sync_workspace(w):
     active = w.pages.currentWidget() == w.workspace
     w.back_button.setVisible(active)
     w.start_button.setVisible(active)
-    w.cancel_button.setVisible(active)
+    w.cancel_button.setVisible(active and w._active)
     w.summary.setVisible(active)
+    w.feedback.setVisible(
+        active and bool(w.feedback.text()) and w.feedback.text() != w.result_title.text()
+    )
+    w.progress.setVisible(active and w._active)
     w.settings_toggle.setVisible(active)
     w.back_button.setText("‹  All tools" if active else "Tool library")
 
@@ -621,10 +634,11 @@ def add_menus(w):
         action.setShortcut(shortcut)
         action.triggered.connect(callback)
         file_menu.addAction(action)
+    w.tool_category_menus = {name: tools_menu.addMenu(name) for name in CATEGORIES[1:]}
     for index, spec in enumerate(w._operations):
         action = QAction(spec.label, w)
         action.triggered.connect(lambda checked=False, i=index: w._select_tool(i))
-        tools_menu.addAction(action)
+        w.tool_category_menus[category(spec)].addAction(action)
     search = QAction("Find a tool", w)
     search.setShortcut(QKeySequence.StandardKey.Find)
     search.triggered.connect(w.search.setFocus)

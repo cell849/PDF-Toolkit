@@ -7,7 +7,7 @@ from contextlib import suppress
 from pathlib import Path
 
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QPixmap
+from PySide6.QtGui import QColor, QPalette, QPixmap
 from PySide6.QtWidgets import (
     QGraphicsView,
     QHBoxLayout,
@@ -35,7 +35,7 @@ class PreviewCanvas(PageCanvas):
         self.fit_page = True
 
     def drawBackground(self, painter, rect):
-        painter.fillRect(rect, QColor("#e6e9ed"))
+        painter.fillRect(rect, self.palette().color(QPalette.ColorRole.Base))
         bounds = self._image_rect.intersected(rect)
         if bounds.isEmpty():
             return
@@ -163,6 +163,11 @@ class DocumentPreview(QWidget):
         layout.addWidget(self.output)
         self.canvas = PreviewCanvas()
         layout.addWidget(self.canvas, 1)
+        self.empty_message = QLabel("Document preview\nAdd a file to get started.")
+        self.empty_message.setObjectName("muted")
+        self.empty_message.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.empty_message.setWordWrap(True)
+        layout.addWidget(self.empty_message, 1)
         bar = QHBoxLayout()
         bar.addWidget(QLabel("Page"))
         self.page = QSpinBox()
@@ -188,13 +193,28 @@ class DocumentPreview(QWidget):
         self.zoom_in.setAccessibleName("Zoom in")
         self.zoom_in.clicked.connect(lambda: self._zoom_step(1.25))
         bar.addWidget(self.zoom_in)
-        layout.addLayout(bar)
+        self.preview_controls = QWidget()
+        self.preview_controls.setObjectName("inlineControl")
+        self.preview_controls.setLayout(bar)
+        bar.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.preview_controls)
         self.details = QLabel("")
         self.details.setWordWrap(True)
         layout.addWidget(self.details)
         self.feedback = QLabel("Select a file to preview.")
         self.feedback.setWordWrap(True)
         layout.addWidget(self.feedback)
+        self._sync_empty_state()
+
+    def _sync_empty_state(self):
+        loaded = self._source is not None
+        self.empty_message.setVisible(not loaded)
+        self.canvas.setVisible(loaded)
+        self.tabs.setVisible(loaded)
+        self.compare_button.setVisible(loaded and bool(self._outputs))
+        self.preview_controls.setVisible(loaded)
+        self.details.setVisible(loaded)
+        self.feedback.setVisible(loaded)
 
     @property
     def running(self):
@@ -213,6 +233,7 @@ class DocumentPreview(QWidget):
         if self.jobs.running:
             self.jobs.cancel()
         self._source, self._outputs = source, outputs
+        self._sync_empty_state()
         self._cache.clear()
         self._purge = True
         if not self.jobs.running:
