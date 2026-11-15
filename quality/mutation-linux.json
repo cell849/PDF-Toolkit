@@ -1,0 +1,88 @@
+{
+  "tool": "mutmut 3.8.1",
+  "scope": "OutputTransaction only; property/publication tests, no Qt mutation",
+  "source_sha256": "33ba28f5ea2e5c5fc1dc74c9c45220af2bc949e96e2c20ac56499a8bfd7a6f99",
+  "total": 47,
+  "killed": 32,
+  "survived": 15,
+  "unclassified_survivors": 0,
+  "crash_or_timeout": 0,
+  "survivor_review": [
+    {
+      "mutant": "local_pdf_toolkit.core.output.x\u01c1OutputTransaction\u01c1__init____mutmut_2",
+      "classification": "tolerated_noncritical_behavior",
+      "reason": "resolve(strict) difference on invalid destinations; both reject without publication"
+    },
+    {
+      "mutant": "local_pdf_toolkit.core.output.x\u01c1OutputTransaction\u01c1__init____mutmut_3",
+      "classification": "tolerated_noncritical_behavior",
+      "reason": "resolve(strict) difference on invalid destinations; both reject without publication"
+    },
+    {
+      "mutant": "local_pdf_toolkit.core.output.x\u01c1OutputTransaction\u01c1__init____mutmut_5",
+      "classification": "tolerated_noncritical_behavior",
+      "reason": "exception message or diagnostic-note wording only; exception type and behavior unchanged"
+    },
+    {
+      "mutant": "local_pdf_toolkit.core.output.x\u01c1OutputTransaction\u01c1__init____mutmut_6",
+      "classification": "tolerated_noncritical_behavior",
+      "reason": "exception message or diagnostic-note wording only; exception type and behavior unchanged"
+    },
+    {
+      "mutant": "local_pdf_toolkit.core.output.x\u01c1OutputTransaction\u01c1__init____mutmut_8",
+      "classification": "tolerated_noncritical_behavior",
+      "reason": "temporary directory naming only; ownership, cleanup and destination volume unchanged"
+    },
+    {
+      "mutant": "local_pdf_toolkit.core.output.x\u01c1OutputTransaction\u01c1__init____mutmut_10",
+      "classification": "tolerated_noncritical_behavior",
+      "reason": "temporary directory naming only; ownership, cleanup and destination volume unchanged"
+    },
+    {
+      "mutant": "local_pdf_toolkit.core.output.x\u01c1OutputTransaction\u01c1__init____mutmut_12",
+      "classification": "tolerated_noncritical_behavior",
+      "reason": "temporary directory naming only; ownership, cleanup and destination volume unchanged"
+    },
+    {
+      "mutant": "local_pdf_toolkit.core.output.x\u01c1OutputTransaction\u01c1__init____mutmut_13",
+      "classification": "tolerated_noncritical_behavior",
+      "reason": "temporary directory naming only; ownership, cleanup and destination volume unchanged"
+    },
+    {
+      "mutant": "local_pdf_toolkit.core.output.x\u01c1OutputTransaction\u01c1publish__mutmut_7",
+      "classification": "tolerated_noncritical_behavior",
+      "reason": "exception message or diagnostic-note wording only; exception type and behavior unchanged"
+    },
+    {
+      "mutant": "local_pdf_toolkit.core.output.x\u01c1OutputTransaction\u01c1publish__mutmut_8",
+      "classification": "tolerated_noncritical_behavior",
+      "reason": "exception message or diagnostic-note wording only; exception type and behavior unchanged"
+    },
+    {
+      "mutant": "local_pdf_toolkit.core.output.x\u01c1OutputTransaction\u01c1publish__mutmut_9",
+      "classification": "tolerated_noncritical_behavior",
+      "reason": "exception message or diagnostic-note wording only; exception type and behavior unchanged"
+    },
+    {
+      "mutant": "local_pdf_toolkit.core.output.x\u01c1OutputTransaction\u01c1publish__mutmut_10",
+      "classification": "tolerated_noncritical_behavior",
+      "reason": "exception message or diagnostic-note wording only; exception type and behavior unchanged"
+    },
+    {
+      "mutant": "local_pdf_toolkit.core.output.x\u01c1OutputTransaction\u01c1__exit____mutmut_10",
+      "classification": "tolerated_noncritical_behavior",
+      "reason": "exception message or diagnostic-note wording only; exception type and behavior unchanged"
+    },
+    {
+      "mutant": "local_pdf_toolkit.core.output.x\u01c1OutputTransaction\u01c1__exit____mutmut_11",
+      "classification": "tolerated_noncritical_behavior",
+      "reason": "exception message or diagnostic-note wording only; exception type and behavior unchanged"
+    },
+    {
+      "mutant": "local_pdf_toolkit.core.output.x\u01c1OutputTransaction\u01c1__exit____mutmut_12",
+      "classification": "tolerated_noncritical_behavior",
+      "reason": "exception message or diagnostic-note wording only; exception type and behavior unchanged"
+    }
+  ],
+  "limits": "Targeted Python logic only; no coverage claim for native libraries or Windows."
+}

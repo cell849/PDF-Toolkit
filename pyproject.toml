@@ -12,7 +12,8 @@ dependencies = ["PySide6==6.8.3", "PyMuPDF==1.26.7", "Pillow==11.3.0", "python-d
 
 [project.optional-dependencies]
 media = ["pillow-heif==1.1.1"]
-dev = ["pytest==8.3.5", "pytest-timeout==2.4.0", "ruff==0.11.13", "build==1.2.2.post1", "psutil==7.0.0", "pyinstaller==6.16.0"]
+quality = ["pyperf==2.11.0", "mutmut==3.8.1; sys_platform != 'win32'"]
+dev = ["hypothesis==6.170.15", "pytest==8.3.5", "pytest-timeout==2.4.0", "ruff==0.11.13", "build==1.2.2.post1", "psutil==7.0.0", "pyinstaller==6.16.0"]
 
 [project.gui-scripts]
 local-pdf-toolkit = "local_pdf_toolkit.app:main"
@@ -30,3 +31,10 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+
+[tool.mutmut]
+source_paths = ["src/local_pdf_toolkit"]
+only_mutate = ["src/local_pdf_toolkit/core/output.py"]
+pytest_add_cli_args_test_selection = ["tests/quality_properties"]
+also_copy = ["tests"]

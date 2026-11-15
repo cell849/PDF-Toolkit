@@ -1,0 +1,11 @@
+{
+  "seed": 849,
+  "cases": 218,
+  "outcomes": {
+    "accepted": 24,
+    "rejected": 194
+  },
+  "failures": [],
+  "seconds": 30.04,
+  "limits": "3 seconds and 512 MiB sampled RSS per parser; bounded small synthetic mutations"
+}

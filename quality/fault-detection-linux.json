@@ -1,0 +1,53 @@
+{
+  "healthy_baseline": "passed",
+  "faults": [
+    {
+      "fault": "overwrite_existing",
+      "detected": true,
+      "pytest_exit": 1,
+      "summary": [
+        "1 failed in 1.30s"
+      ]
+    },
+    {
+      "fault": "ignore_cancel",
+      "detected": true,
+      "pytest_exit": 1,
+      "summary": [
+        "1 failed in 0.11s"
+      ]
+    },
+    {
+      "fault": "copy_image_metadata",
+      "detected": true,
+      "pytest_exit": 1,
+      "summary": [
+        "1 failed in 0.23s"
+      ]
+    },
+    {
+      "fault": "wrong_redaction_page",
+      "detected": true,
+      "pytest_exit": 1,
+      "summary": [
+        "1 failed in 0.31s"
+      ]
+    },
+    {
+      "fault": "ignore_source_digest",
+      "detected": true,
+      "pytest_exit": 1,
+      "summary": [
+        "1 failed in 0.17s"
+      ]
+    },
+    {
+      "fault": "ignore_pixel_budget",
+      "detected": true,
+      "pytest_exit": 1,
+      "summary": [
+        "1 failed in 0.19s"
+      ]
+    }
+  ]
+}
