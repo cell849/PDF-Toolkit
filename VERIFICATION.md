@@ -207,3 +207,12 @@ and completed their partial files and added integration/PDF/PPTX tests. No agent
 report was treated as completion evidence. Native/manual Office fidelity,
 external format coverage and personal content anonymization remain limitations;
 see docs/METADATA.md. Original files are never changed or deleted.
+
+v0.4.0 Windows release verification: run
+https://github.com/cell849/tools/actions/runs/43660660005 completed successfully
+from ce2917a. Windows and Ubuntu matrix checks also succeeded. The Windows
+package test stage passed 178 tests with 9 missing-LibreOffice skips; the packaged
+worker self-test passed and the private v0.4.0 release asset was uploaded. The
+new image/PPTX/PDF metadata tests and in-app report test are included in CI.
+Manual Windows PowerPoint rendering/accessibility verification remains outside
+these automated checks; the documented unsupported PPTX subset is intentional.
