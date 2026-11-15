@@ -138,7 +138,17 @@ class ToolCard(QPushButton):
         return QSize(260, self.heightForWidth(260)).expandedTo(self.minimumSizeHint())
 
     def heightForWidth(self, width):
-        return max(164, self.layout().totalHeightForWidth(width))
+        content = self.layout()
+        margins = content.contentsMargins()
+        available = max(1, width - margins.left() - margins.right())
+        # Measure labels directly: Qt's layout height cache can retain earlier
+        # wrapping metrics after a stylesheet/font change on Windows.
+        height = margins.top() + margins.bottom()
+        height += max(0, content.count() - 1) * content.spacing()
+        for index in range(content.count()):
+            text = content.itemAt(index).widget()
+            height += max(text.sizeHint().height(), text.heightForWidth(available))
+        return max(164, height)
 
     def event(self, event):
         result = super().event(event)

@@ -131,7 +131,11 @@ def test_library_cards_keep_all_text_visible_after_theme_and_text_changes(qapp, 
                 assert card.isVisible() and card.height() >= 164
                 for text in card.findChildren(QLabel):
                     assert text.isVisible() and text.width() > 0
-                    assert text.height() >= text.heightForWidth(text.width())
+                    assert text.height() >= text.heightForWidth(text.width()), (
+                        f"{card.accessibleName()} at {percent}%: {text.text()!r}, "
+                        f"label={text.size()}, card={card.size()}, "
+                        f"required={card.heightForWidth(card.width())}"
+                    )
                     assert card.rect().contains(text.geometry())
             for index, first in enumerate(window.library.cards):
                 for second in window.library.cards[index + 1 :]:
