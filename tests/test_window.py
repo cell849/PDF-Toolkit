@@ -17,16 +17,3 @@ def test_foundation_window_opens_and_closes_with_event_loop(qapp):
     assert not window.isVisible()
     window.deleteLater()
     qapp.processEvents()
-
-
-def test_window_discovers_operations_from_registry(qapp, test_converter):
-    registry = ConverterRegistry()
-    registry.register(test_converter)
-    window = MainWindow(registry)
-    try:
-        assert window.operation_list.count() == 1
-        assert window.operation_list.item(0).text() == test_converter.spec.label
-    finally:
-        window.close()
-        window.deleteLater()
-        qapp.processEvents()

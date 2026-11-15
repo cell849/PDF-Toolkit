@@ -10,6 +10,7 @@ from local_pdf_toolkit.core.registry import ConverterRegistry
 
 def build_registry():
     from local_pdf_toolkit.converters.compress import PdfCompressConverter
+    from local_pdf_toolkit.converters.document_details import DocumentDetailsConverter
     from local_pdf_toolkit.converters.image_metadata import ImageMetadataConverter
     from local_pdf_toolkit.converters.images import image_converters
     from local_pdf_toolkit.converters.inspector import MetadataInspector
@@ -23,6 +24,7 @@ def build_registry():
     from local_pdf_toolkit.converters.pdf_tools import pdf_tool_converters
     from local_pdf_toolkit.converters.pptx_metadata import PptxMetadataConverter
     from local_pdf_toolkit.converters.redaction import redaction_converters
+    from local_pdf_toolkit.converters.rename_copies import BatchRenameConverter
     from local_pdf_toolkit.converters.text_metadata import TextMetadataConverter
 
     registry = ConverterRegistry()
@@ -43,6 +45,7 @@ def build_registry():
         )
     )
     converters.append(MetadataInspector())
+    converters.extend((BatchRenameConverter(), DocumentDetailsConverter()))
     converters.extend(ocr_converters())
     converters.extend(redaction_converters())
     converters.extend(media_metadata_converters())
@@ -70,7 +73,7 @@ def main() -> int:
 
     app.setWindowIcon(app_icon())
     app.setApplicationName("Local PDF Toolkit")
-    app.setApplicationVersion("0.7.1")
+    app.setApplicationVersion("0.7.2")
     window = MainWindow(build_registry())
     window.show()
     return app.exec()

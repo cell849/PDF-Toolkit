@@ -54,6 +54,7 @@ def apply_theme(window, dark=None):
     error, error_bg = ("#ffb4ab", "#3c2526") if dark else ("#b42318", "#fff1ef")
     success, success_bg = ("#a5dfb6", "#20382a") if dark else ("#24683b", "#effaf2")
     partial_bg = "#3a3020" if dark else "#fff7e6"
+    scroll_thumb = "#788493" if dark else "#88919e"
     palette = window.palette()
     for role, color in (
         (QPalette.ColorRole.Window, base),
@@ -125,8 +126,12 @@ def apply_theme(window, dark=None):
         QPushButton#disclosure:focus {{ border-color: {accent}; }}
         QPushButton#toolCard {{ text-align: left; padding: 0; }}
         QPushButton#toolCard:hover {{ background: {surface}; border: 2px solid {accent}; }}
-        QListWidget, QListView {{ background: {surface}; color: {text};
+        QListWidget, QListView, QTableView {{ background: {surface}; color: {text};
             border: 1px solid {border}; border-radius: 7px; padding: 4px; outline: 0;
+            selection-background-color: {selection}; selection-color: {text};
+        }}
+        QHeaderView::section {{ background: {surface}; color: {secondary};
+            border: 0; border-bottom: 1px solid {border}; padding: 8px;
         }}
         QListWidget::item, QListView::item {{ padding: 8px; border-radius: 5px; }}
         QListWidget::item:selected, QListView::item:selected {{
@@ -173,12 +178,18 @@ def apply_theme(window, dark=None):
         }}
         QProgressBar::chunk {{ background: {accent}; border-radius: 3px; }}
         QScrollArea {{ border: 0; }}
-        QScrollBar:vertical {{ background: {base}; width: 10px; margin: 0; }}
-        QScrollBar:horizontal {{ background: {base}; height: 10px; margin: 0; }}
-        QScrollBar::handle {{ background: {border}; border-radius: 5px;
-            min-height: 24px; min-width: 24px;
+        QScrollBar:vertical {{ background: transparent; width: 12px; margin: 0; }}
+        QScrollBar:horizontal {{ background: transparent; height: 12px; margin: 0; }}
+        QScrollBar::handle {{ background: {scroll_thumb}; border-radius: 3px; }}
+        QScrollBar::handle:vertical {{ min-height: 32px; margin: 2px 3px; }}
+        QScrollBar::handle:horizontal {{ min-width: 32px; margin: 3px 2px; }}
+        QScrollBar::handle:hover {{ background: {secondary}; }}
+        QScrollBar::handle:pressed {{ background: {text}; }}
+        QScrollBar::add-line, QScrollBar::sub-line {{
+            background: transparent; border: 0; width: 0; height: 0;
         }}
-        QScrollBar::add-line, QScrollBar::sub-line {{ width: 0; height: 0; }}
+        QScrollBar::add-page, QScrollBar::sub-page {{ background: transparent; }}
+        QAbstractScrollArea::corner {{ background: transparent; border: 0; }}
         QSplitter::handle {{ background: {base}; }}
         QSplitter::handle:hover {{ background: {border}; }}
         QStatusBar {{ background: {base}; color: {secondary}; }}

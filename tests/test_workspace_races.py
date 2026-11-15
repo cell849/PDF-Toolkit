@@ -124,6 +124,23 @@ def test_bulk_name_normalizes_typed_extension_before_adding_index(race_workspace
     assert converter.base_name == "Invoice-1"
 
 
+def test_cancel_selected_during_batch_name_preflight_cancels_entire_plan(race_workspace, qapp):
+    window = race_workspace
+    choose(window, "file.rename_copies")
+    source = window._paths[0]
+    window._records.pop(source)
+    window._start()
+    assert window._requested_start and window._probe_jobs.running
+    window.files.setCurrentRow(1)
+    window._cancel_one()
+    assert not window._requested_start and window._probe_jobs.cancelled
+    window._probe_jobs.complete(error=("cancelled", "Cancelled"))
+    qapp.processEvents()
+    assert not window.jobs.started and not window._active
+    assert window.result_banner.property("state") == "cancelled"
+    assert window._rename_preview.table.item(1, 1).text() == "second-002.pdf"
+
+
 def test_named_inspection_json_can_be_opened_as_report(race_workspace, tmp_path, monkeypatch):
     window = race_workspace
     report = tmp_path / "Chosen.json"

@@ -151,3 +151,14 @@ layout/text scaling. Keep conversion capabilities, fidelity and offline operatio
 User authorized Windows testing and publication after integration. User confirmed
 there is no trusted signing certificate/account; do not bypass Windows protections
 or claim the unsigned release removes SmartScreen warnings.
+
+## v0.7.2 — user-authorized scrollbars, test audit and file tools
+
+User approved the scrollbar/test cleanup and remaining suggestions: batch rename
+copies and document details. Reusable presets and image crop are excluded.
+Acceptance: native scroll interactions with rounded light/dark scrollbar thumbs;
+remove obsolete/duplicated/implementation-only checks while retaining safety and
+layout regression coverage; pure live name planning matching atomically published,
+byte-identical numbered copies; explicit bounded structural reports for PDF/image/
+Office documents with locked-PDF restrictions. No new runtime dependencies.
+User authorized publication as 0.7.2 after verification.

@@ -100,3 +100,25 @@ The EXE has an original icon and version information. Authenticode signing can b
 requested by the local build script using an already-provisioned trusted certificate
 thumbprint. No identity was supplied for this release, so SmartScreen warnings
 remain possible. The checksum is not a signature or a reputation guarantee.
+
+## 0.7.2 file utilities
+
+**Batch rename copies** (Organize) supports the same verified input formats as the
+metadata inspector. Edit a replacement basename (blank keeps source stems), prefix,
+suffix, starting number and zero-padding width. A live table shows exact names in
+input order. Saving creates byte-identical copies with original suffixes; metadata
+remains. Originals are never renamed. Bounds: 1–10,000 files, existing parser/file
+limits, safe Windows filenames and a conservative 259 UTF-16-unit destination path.
+Encrypted/unsupported inputs are rejected. A collision or cancellation rolls back
+the batch's published outputs without touching pre-existing files.
+
+**Document details** (Organize) saves a JSON report viewable in the app. PDFs show
+font resource names/embedding flags, encryption, rotated page dimensions in points
+and attachment names/sizes without extraction. Locked PDFs show encryption/page
+count and explicitly omit protected details. Dimensions/font scanning cover at most
+200 pages, 256 distinct fonts and 100 attachment names; reports are capped at 64 KiB
+with explicit truncation notices. Images show display-oriented pixel dimensions,
+mode and stored DPI when available. Office packages show structural counts (such
+as sheets/slides/paragraphs), not rendered page layouts or inferred font inventories.
+Other accepted formats provide verified type/size. Names may contain personal text;
+use the separate masked metadata inspector for a privacy inventory.

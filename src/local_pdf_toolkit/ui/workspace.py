@@ -42,6 +42,7 @@ class WorkspaceBehavior:
         self._probe_queue = []
         self._probe_path = None
         self.document_preview = DocumentPreview(self)
+        self._rename_preview = None
         self.preview_host.layout().addWidget(self.document_preview)
         self.document_preview.compare_requested.connect(self._open_comparison)
         self.document_preview.idle.connect(self._resource_idle)
@@ -258,8 +259,10 @@ class WorkspaceBehavior:
         if (
             info.get("error_code") == "password_required"
             and spec
-            and spec.operation_id == "pdf.unlock"
+            and spec.operation_id in ("pdf.unlock", "document.details")
         ):
+            if spec.operation_id == "document.details":
+                return True, "Encryption details are available; document contents remain locked."
             password = self._editors.get("password", lambda: "")()
             return (
                 (True, "Password will be verified during processing.")
@@ -320,6 +323,23 @@ class WorkspaceBehavior:
 
     def _selection_changed(self, *_):
         if not self._ux_ready:
+            return
+        rename = bool(self._current_spec() and self._tool_id == "file.rename_copies")
+        self.document_preview.setVisible(not rename)
+        self.preview_button.setText("Names" if rename else "Preview")
+        if rename and self._rename_preview is None:
+            from local_pdf_toolkit.ui.rename_preview import RenamePreview
+
+            self._rename_preview = RenamePreview(self)
+            self.preview_host.layout().addWidget(self._rename_preview)
+        if self._rename_preview is not None:
+            self._rename_preview.setVisible(rename)
+        if rename:
+            self.document_preview.set_document(None)
+            self._rename_preview.update_plan(
+                self._paths, {name: getter() for name, getter in self._editors.items()}
+            )
+            self._rename_preview.table.selectRow(self.files.currentRow())
             return
         index = self.files.currentRow()
         path = self._paths[index] if 0 <= index < len(self._paths) else None
@@ -437,6 +457,8 @@ class WorkspaceBehavior:
         if 0 <= index < len(self._paths):
             values["_source_signature"] = self._signature(self._paths[index])
         spec = self._current_spec()
+        if spec and spec.operation_id == "file.rename_copies":
+            values["_output_name"] = ""
         if spec and spec.input_mode == "multiple":
             values["_inputs"] = tuple(str(path) for path in self._paths)
         return values
@@ -495,6 +517,9 @@ class WorkspaceBehavior:
         values = {key: get() for key, get in self._editors.items()}
         spec = self._current_spec()
         parts = []
+        rename = bool(spec and spec.operation_id == "file.rename_copies")
+        if rename and self._rename_preview is not None:
+            self._rename_preview.update_plan(self._paths, values)
         if "width" in values or "height" in values:
             parts.append(
                 f"Fit within {values.get('width') or 'original'} × "
@@ -544,11 +569,13 @@ class WorkspaceBehavior:
                     editor.setEnabled(not lossless)
         if spec and spec.operation_id == "metadata.inspect":
             parts.insert(0, "Inspect one file, or compare original then cleaned copy")
+        elif rename:
+            parts.insert(0, f"Save {len(self._paths)} numbered copies in listed order")
         elif spec and spec.input_mode == "multiple":
             parts.insert(0, f"Combine {len(self._paths)} files in listed order")
         elif len(self._paths) > 1:
             parts.insert(0, f"Process {len(self._paths)} files separately")
-        if self.output_name.text().strip():
+        if not rename and self.output_name.text().strip():
             parts.append(
                 "Output: "
                 + self.output_name.text().strip()
@@ -557,7 +584,11 @@ class WorkspaceBehavior:
         self.summary.setText(" · ".join(parts) or "New copies only. Original files stay unchanged.")
         operation = spec.operation_id if spec else ""
         verb = (
-            "Compress"
+            "Save copies"
+            if operation == "file.rename_copies"
+            else "Inspect details"
+            if operation == "document.details"
+            else "Compress"
             if "compress" in operation
             else "Clean metadata"
             if operation.startswith("metadata.clean")
@@ -721,9 +752,14 @@ class WorkspaceBehavior:
         self.settings_panel.setVisible(True)
         self.settings_action.setChecked(True)
         if getattr(self, "_error_action", "") == "rename":
-            self.settings_scroll.ensureWidgetVisible(self.output_name)
-            self.output_name.setFocus()
-            self.output_name.selectAll()
+            editor = (
+                self._editors["base_name"].__self__
+                if self._tool_id == "file.rename_copies"
+                else self.output_name
+            )
+            self.settings_scroll.ensureWidgetVisible(editor)
+            editor.setFocus()
+            editor.selectAll()
         else:
             self.settings_scroll.ensureWidgetVisible(self.options_widget)
             self.options_widget.setFocus()

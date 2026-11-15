@@ -75,6 +75,10 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
     def _open_preview(self):
         if self._active:
             return
+        if self._current_spec() and self._current_spec().operation_id == "file.rename_copies":
+            self._selection_changed()
+            self._rename_preview.setFocus()
+            return
         index = self.files.currentRow()
         if not 0 <= index < len(self._paths):
             self.statusBar().showMessage("Choose a file in the list to preview.")
@@ -174,19 +178,24 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                 lines.extend(
                     f"{row['category']}: {row['before']} → {row['after']}" for row in comparison
                 )
+            if "document_details" in report:
+                from local_pdf_toolkit.ui.report_text import document_details_text
+
+                lines = document_details_text(report["document_details"], report.get("limits", []))
         except (OSError, ValueError, TypeError, KeyError, AttributeError):
             self.statusBar().showMessage(
                 "Could not read the cleaning report. Check the output folder."
             )
             return
         dialog = QDialog(self)
-        dialog.setWindowTitle("Cleaning report")
+        details = "document_details" in report
+        dialog.setWindowTitle("Document details" if details else "Cleaning report")
         dialog.resize(620, 430)
         layout = QVBoxLayout(dialog)
         text = QPlainTextEdit()
         text.setReadOnly(True)
         text.setPlainText("\n".join(lines))
-        text.setAccessibleName("Cleaning policy and limitations")
+        text.setAccessibleName("Document details" if details else "Cleaning policy and limitations")
         layout.addWidget(text)
         dialog.exec()
 
@@ -228,7 +237,9 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         self.options_heading.setText(
             "Cleaning policy" if privacy and not spec.options else "Options"
         )
-        self.report_button.setVisible(privacy or spec.operation_id == "pdf.redact")
+        self.report_button.setVisible(
+            privacy or spec.operation_id in ("pdf.redact", "document.details")
+        )
         self.report_button.setEnabled(any(self._results.values()))
         self.tool_title.setText(spec.label.replace(" / resize / compress", ""))
         self.tool_hint.setText(
@@ -236,6 +247,18 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
             if spec.input_mode == "multiple"
             else "Each file is processed separately. Originals stay untouched."
         )
+        rename = spec.operation_id == "file.rename_copies"
+        self.output_name.setEnabled(not rename and not self._active)
+        self.output_name.setPlaceholderText(
+            "Use naming options above" if rename else "Automatic name"
+        )
+        if rename:
+            self.tool_hint.setText("Preview names, then save separate copies in the listed order.")
+        elif spec.operation_id == "document.details":
+            self.tool_hint.setText(
+                "Inspect fonts, page sizes, encryption and attachments. "
+                "Open the report after saving."
+            )
         if privacy:
             formats = ", ".join(kind.value.upper() for kind in spec.input_formats)
             self.tool_hint.setText(
@@ -363,7 +386,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                 "password",
                 "regions",
             }
-            target_form = self.form if option.name in basic else self.advanced_form
+            target_form = self.form if rename or option.name in basic else self.advanced_form
             display_label = option.label.replace(" (px, 0 = original)", " (px)").replace(
                 " (0 = no target)", ""
             )
@@ -509,6 +532,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
             self.operation_list,
             self.options_widget,
             self.destination,
+            self.output_name,
             self.browse,
             self.start_button,
             self.up_button,
@@ -525,6 +549,8 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         self.cancel_button.setVisible(active)
         self.cancel_selected.setVisible(active and bool(self._paths))
         self.start_button.setEnabled(not active and self.operation_list.currentRow() >= 0)
+        if self._current_spec() and self._current_spec().operation_id == "file.rename_copies":
+            self.output_name.setEnabled(False)
         self._sync_comparison()
 
     def _start(self):
@@ -570,10 +596,15 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                 self.statusBar().showMessage("Add exactly one unchanged PDF and mark areas first.")
                 self._retrying = False
                 return
-        indices = sorted(self._failed) if self._retrying else list(range(len(self._paths)))
-        preflight = dict(self._preflight_errors)
         spec = self._converter.spec
+        indices = (
+            sorted(self._failed)
+            if self._retrying and spec.input_mode != "multiple"
+            else list(range(len(self._paths)))
+        )
+        preflight = dict(self._preflight_errors)
         if preflight and spec.input_mode == "multiple":
+            self._retrying = False
             self._failed.update(preflight)
             self._errors.update(preflight)
             self._batch_finished_feedback()
@@ -622,7 +653,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         try:
             converter = self._converter
             base = self.output_name.text().strip()
-            if base:
+            if base and converter.spec.operation_id != "file.rename_copies":
                 from local_pdf_toolkit.converters.named_output import (
                     NamedOutputConverter,
                     normalize_base_name,
@@ -651,7 +682,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         )
 
     def _finished(self, paths, error):
-        for index in self._group:
+        for position, index in enumerate(self._group):
             message = f"Done — {len(paths)} outputs — {self._paths[index].name}"
             if error:
                 message = f"Failed — {self._paths[index].name}"
@@ -660,7 +691,9 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                 if error[0] == "cancelled":
                     self._cancelled.add(index)
             else:
-                self._results[index] = tuple(paths)
+                self._results[index] = (
+                    (paths[position],) if self._tool_id == "file.rename_copies" else tuple(paths)
+                )
                 configuration = dict(self._run_values)
                 configuration["_source_signature"] = self._signature(self._paths[index])
                 self._result_settings[(self._tool_id, self._paths[index])] = configuration
@@ -770,6 +803,9 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         if index < 0:
             return
         if self._requested_start and not self.jobs.running:
+            if self._current_spec().input_mode == "multiple":
+                self._cancel()
+                return
             self._pre_cancelled.add(index)
             self._failed.add(index)
             self._cancelled.add(index)

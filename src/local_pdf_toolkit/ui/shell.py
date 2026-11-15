@@ -38,6 +38,8 @@ CATEGORIES = (
 
 def category(spec):
     operation = spec.operation_id
+    if operation in ("file.rename_copies", "document.details"):
+        return "Organize"
     if operation.startswith("metadata."):
         return "Privacy"
     if operation == "pdf.compress":
@@ -86,6 +88,8 @@ def panel():
 
 def tool_description(spec):
     descriptions = {
+        "file.rename_copies": "Preview numbered names and save separate copies",
+        "document.details": "View fonts, page sizes, encryption and attachments",
         "image.to_pdf": "Combine ordered images into a PDF",
         "pdf.merge": "Join PDFs without rasterizing pages",
         "pdf.split": "Save selected page ranges as separate PDFs",

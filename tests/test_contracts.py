@@ -27,12 +27,3 @@ def test_progress_supports_known_and_indeterminate_totals():
     assert Progress(2, 10).total == 10
     assert Progress().total is None
     assert Progress(0, 0).completed == 0
-
-
-def test_synthetic_pdf_fixture_has_valid_basic_structure(fixture_dir):
-    # M0 checks fixture integrity only. M1 adds real parser/rendering assertions.
-    data = (fixture_dir / "one_page.pdf").read_bytes()
-    assert data.startswith(b"%PDF-1.4")
-    assert data.endswith(b"%%EOF\n")
-    xref_offset = int(data.split(b"startxref\n")[1].splitlines()[0])
-    assert data[xref_offset:].startswith(b"xref\n")

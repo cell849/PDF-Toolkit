@@ -12,6 +12,10 @@ def test_application_registry_and_all_option_forms(qapp):
     assert registry.get("office.to_pdf")
     window = MainWindow(registry)
     try:
+        assert window.operation_list.count() == len(operations)
+        assert [window.operation_list.item(i).text() for i in range(len(operations))] == [
+            spec.label for spec in operations
+        ]
         for index, spec in enumerate(operations):
             window.operation_list.setCurrentRow(index)
             assert set(window._editors) == {definition.name for definition in spec.options}

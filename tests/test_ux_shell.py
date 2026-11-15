@@ -2,8 +2,8 @@
 
 import pytest
 from PySide6.QtCore import QPoint, QPointF, Qt
-from PySide6.QtGui import QIcon, QWheelEvent
-from PySide6.QtWidgets import QAbstractSpinBox, QLabel, QListView, QWidget
+from PySide6.QtGui import QWheelEvent
+from PySide6.QtWidgets import QAbstractSpinBox, QLabel, QWidget
 
 from local_pdf_toolkit.app import build_registry
 from local_pdf_toolkit.ui.controls import ChoiceBox, NumericDoubleSpinBox, NumericSpinBox
@@ -50,17 +50,22 @@ def test_numbers_require_deliberate_wheel_and_keep_keyboard_step_support(qapp):
             number.close()
 
 
-def test_choice_popup_uses_the_same_list_and_deliberate_wheel(qapp):
+def test_choice_popup_keeps_keyboard_selection_and_deliberate_wheel(qapp):
+    from PySide6.QtTest import QTest
+
     choice = ChoiceBox()
     try:
         choice.addItems(("KB", "MB", "% of original"))
         choice.setCurrentIndex(1)
-        assert isinstance(choice.view(), QListView)
-        assert choice.style().objectName().lower() == "fusion"
+        choice.show()
+        choice.showPopup()
+        QTest.keyClick(choice.view(), Qt.Key.Key_Down)
+        QTest.keyClick(choice.view(), Qt.Key.Key_Return)
+        assert choice.currentIndex() == 2
         wheel(choice)
-        assert choice.currentIndex() == 1
+        assert choice.currentIndex() == 2
         wheel(choice, Qt.KeyboardModifier.ControlModifier)
-        assert choice.currentIndex() == 0
+        assert choice.currentIndex() == 1
     finally:
         choice.close()
 
@@ -165,7 +170,6 @@ def test_text_tokens_meet_contrast_and_icon_contains_windows_sizes(qapp):
     assert resource_path("app.png").is_file()
     icon = app_icon()
     assert not icon.isNull()
-    assert isinstance(icon, QIcon)
     assert {16, 32, 48, 256} <= {size.width() for size in icon.availableSizes()}
 
 
