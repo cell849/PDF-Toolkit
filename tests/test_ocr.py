@@ -326,9 +326,11 @@ def test_subprocess_failure_and_cleanup(mode, monkeypatch):
         if timer:
             timer.cancel()
             timer.join()
-    assert len(processes) == 1
-    assert processes[0].poll() is not None
-    assert processes[0].stdout.closed
+    # Windows cleanup launches taskkill through the same patched Popen.
+    workers = [process for process in processes if process.args[0] == sys.executable]
+    assert len(workers) == 1
+    assert all(process.poll() is not None for process in processes)
+    assert workers[0].stdout.closed
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX process group assertion")
