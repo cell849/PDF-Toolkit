@@ -110,12 +110,16 @@ class PreviewConverter:
                             "page": page_number,
                             "width": pixmap.width,
                             "height": pixmap.height,
+                            "native_width": page.rect.width,
+                            "native_height": page.rect.height,
+                            "native_unit": "pt",
                             "office_approximation": office,
                         }
                 else:
                     if page_number != 1:
                         raise ConversionError(ErrorCode.INVALID_OPTIONS, "This image has one page.")
                     with open_image(path) as image:
+                        native_width, native_height = image.size
                         image.thumbnail((1400, 1400), Image.Resampling.LANCZOS)
                         with (
                             image.convert("RGBA") as rgba,
@@ -127,10 +131,14 @@ class PreviewConverter:
                                 "page": 1,
                                 "width": fresh.width,
                                 "height": fresh.height,
+                                "native_width": native_width,
+                                "native_height": native_height,
+                                "native_unit": "px",
                                 "office_approximation": False,
                             }
                 cancel_token.raise_if_cancelled()
                 info["source_sha256"] = digest.hexdigest()
+                info["source_bytes"] = total
                 (output.staging / info_name).write_text(json.dumps(info), encoding="utf-8")
                 progress(Progress(1, 1))
                 return output.publish(

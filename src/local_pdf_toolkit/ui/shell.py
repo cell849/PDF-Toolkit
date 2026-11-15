@@ -242,6 +242,7 @@ def build_window(w):
     w.files.setTextElideMode(Qt.TextElideMode.ElideMiddle)
     w.files.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
     w.files.itemDoubleClicked.connect(w._open_result)
+    w.files.currentRowChanged.connect(w._sync_comparison)
     w.files.hide()
     files_layout.addWidget(w.files)
     file_actions = QGridLayout()
@@ -271,7 +272,7 @@ def build_window(w):
     w.options_widget.setObjectName("options")
     w.form = QFormLayout(w.options_widget)
     w.form.setContentsMargins(0, 0, 0, 0)
-    w.form.setSpacing(12)
+    w.form.setSpacing(10)
     w.form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
     w.form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
     options_layout.addWidget(w.options_widget)
@@ -291,6 +292,10 @@ def build_window(w):
     w.open_button = button("Open output folder", w._open_directory)
     output_actions = QHBoxLayout()
     output_actions.addWidget(w.open_button)
+    w.compare_button = button("Compare before / after", w._open_comparison)
+    w.compare_button.setAccessibleName("Compare original and converted file")
+    w.compare_button.setEnabled(False)
+    output_actions.addWidget(w.compare_button)
     w.report_button = button("View cleaning report", w._open_report)
     w.report_button.setEnabled(False)
     w.report_button.hide()
@@ -398,6 +403,7 @@ def add_menus(w):
         ("Open output folder", w._open_directory),
         ("View cleaning report", w._open_report),
         ("Preview selected", w._open_preview),
+        ("Compare before / after", w._open_comparison),
     ):
         action = QAction(title, w)
         action.triggered.connect(callback)

@@ -131,3 +131,12 @@ round trips; bounded primary-stream FFmpeg transcodes with independent output
 verification. Originals remain unchanged. External executables are optional,
 separately installed and never downloaded at runtime. Native Windows packaging
 must be checked separately before a future release.
+
+## v0.6.0 — editable sizing and release authorization
+
+User approved custom DPI with slider landmarks and exact entry, editable target
+amounts with units/percentage, percentage image resizing, explicit size-driven
+resolution reduction and on-demand before/after comparison. Preserve resolution
+is the chosen default. User subsequently authorized pushing and publishing only
+after changes and local verification, followed by Windows Actions tests/package.
+This supersedes the earlier local-only restriction for this release.

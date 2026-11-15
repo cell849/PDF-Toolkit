@@ -1,19 +1,25 @@
-Closes the missing Office metadata-cleaning gaps while keeping the desktop style:
+# Local PDF Toolkit 0.6.0
 
-- DOCX: properties, reviewer/comments, normal text revision history, ZIP fields and supported images.
-- XLSX: properties, comments, printer/cache metadata, ZIP fields and supported images; formulas/normal formatting retained.
-- ODT/ODS/ODP: properties, settings, comments/change history, thumbnails and supported images.
-- Basic RTF: known property/reviewer/generator/history groups, with unsupported payloads rejected.
-- TXT/CSV/MD: separately labelled neutral-name UTF-8 copy; all textual content remains.
-- A coverage regression accounts for every currently accepted input format.
-- docs/FORMAT_COVERAGE.md lists support and common gaps; docs/TOOL_IDEAS.md ranks useful additions.
+Download **LocalPDFToolkit-Windows-x64.zip** under Assets, extract the complete
+folder, and launch LocalPDFToolkit.exe. The automatically listed source archives
+are for development. Keep the _internal folder beside the EXE.
 
-36 tools total. Metadata cleaning is not an anonymity guarantee. Visible content,
-style/bookmark/sheet labels, named ranges, headers/footers and filesystem data can
-remain. Complex/linked/active packages, unsupported hidden/protected content and
-unsupported revisions are rejected. Originals are preserved. Read the in-app policy.
+- Editable DPI, including exact values such as 276, with slider landmarks.
+- Editable size targets in KB, MB, KiB, MiB or percent of original file size.
+- Image percentage resizing and explicit permission for size-driven downscaling;
+  resolution is preserved by default and impossible targets fail clearly.
+- On-demand before/after preview with dimensions and file sizes.
+- Metadata inspection, document previews, offline OCR, visual PDF redaction,
+  HEIC/AVIF photos and local audio/video cleanup.
+- Safer extreme-page raster limits, resilient output cleanup and lower memory
+  consumption for opaque images; independent integrity/regression tests added.
 
-Download **LocalPDFToolkit-Windows-x64.zip**, extract once, and open
-**LocalPDFToolkit/LocalPDFToolkit.exe** with `_internal` beside it.
-Private unsigned personal-use build. LibreOffice is separate for Office-to-PDF;
-the new editable package cleaners do not require LibreOffice at runtime.
+All conversion stays local. Originals remain untouched. OCR requires separately
+installed Tesseract/language packs; Office conversion requires LibreOffice;
+audio/video cleaning requires FFmpeg/ffprobe. No engine is downloaded at runtime.
+PDF redaction reconstructs every page as pixels and loses selectable text and
+interactivity. Metadata cleaning is not a guarantee of anonymity.
+
+Automated Windows test/package results are attached to the release's source
+commit in Actions. Manual Windows 11 desktop/clean-machine verification remains
+separate. This personal-use package retains the dependency/license notice.

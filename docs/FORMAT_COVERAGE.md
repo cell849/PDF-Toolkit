@@ -68,3 +68,16 @@ accepts content-verified MP4/MOV/MKV/WebM/AVI/MP3/M4A/WAV/FLAC/OGG/AAC through
 separately installed FFmpeg/ffprobe, with MP4 or FLAC reconstruction. Metadata
 inspection supports these containers too. See docs/METADATA.md for destructive
 format, stream and quality limits.
+
+## Editable resizing and compression controls
+
+PDF rendering and rasterized compression accept a custom DPI within supported
+bounds, including 276 DPI. The raster pixel limit still applies. Changing the
+print-DPI metadata of an existing image alone is not pixel resizing.
+
+Image/PDF size targets accept an editable amount and KB/MB (decimal), KiB/MiB
+(binary), or a percentage to **keep** of the original input bytes. A target is an
+upper bound. Preserving resolution is the default: permitted quality adjustments
+are tried, then an unattainable target fails without publishing output. Reducing
+pixel dimensions/DPI for size targeting requires explicit permission. Images also
+support percentage reduction of their dimensions, with aspect ratio retained.

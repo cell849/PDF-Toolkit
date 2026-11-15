@@ -45,15 +45,25 @@ def test_resize_formats(images, tmp_path, format):
 
 
 def test_target_size(images, tmp_path):
-    (path,) = run(ImageConverter(FileFormat.JPEG), images[0], tmp_path, {"target_kib": 1})
+    (path,) = run(
+        ImageConverter(FileFormat.JPEG),
+        images[0],
+        tmp_path,
+        {"target_kib": 1, "allow_downscale": True},
+    )
     assert path.stat().st_size <= 1024
 
 
-def test_impossible_png_target_publishes_nothing(tmp_path):
+def test_png_target_with_explicit_downscaling(tmp_path):
     source = tmp_path / "noise.png"
     Image.effect_noise((100, 100), 100).save(source)
     # A 1 KiB target is achievable after resizing; ensure it is actually enforced.
-    (path,) = run(ImageConverter(FileFormat.PNG), source, tmp_path, {"target_kib": 1})
+    (path,) = run(
+        ImageConverter(FileFormat.PNG),
+        source,
+        tmp_path,
+        {"target_kib": 1, "allow_downscale": True},
+    )
     assert path.stat().st_size <= 1024
 
 

@@ -20,6 +20,14 @@ jobs:
         with:
           python-version: '3.13'
           architecture: x64
+      - name: Install local verification and conversion engines
+        shell: pwsh
+        run: |
+          choco install qpdf exiftool poppler tesseract ffmpeg libreoffice-fresh -y --no-progress --execution-timeout=600
+          if ($LASTEXITCODE -ne 0) { throw 'Test engine installation failed.' }
+          Import-Module "$env:ChocolateyInstall/helpers/chocolateyProfile.psm1"
+          refreshenv
+          $env:PATH -split ';' | Where-Object { $_ } | Add-Content $env:GITHUB_PATH
       - run: python -m venv .venv
       - run: ./.venv/Scripts/python.exe -m pip install -e ".[dev,media]"
       - run: ./.venv/Scripts/python.exe -m ruff check .

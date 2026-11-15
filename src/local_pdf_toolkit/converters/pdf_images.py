@@ -40,7 +40,12 @@ class PdfImagesConverter:
         options = [
             OptionDefinition("pages", "Pages", "all", "All pages or a range such as 1,3-5."),
             OptionDefinition(
-                "dpi", "Resolution (DPI)", 150, "Rendering resolution.", (72, 150, 300)
+                "dpi",
+                "Resolution (DPI)",
+                150,
+                "Rendering resolution (10–1200).",
+                minimum=10,
+                maximum=1200,
             ),
         ]
         if output_format == FileFormat.JPEG:
@@ -113,7 +118,8 @@ class PdfImagesConverter:
                 and not definition.minimum <= value <= definition.maximum
             ):
                 raise ConversionError(
-                    ErrorCode.INVALID_OPTIONS, f"{definition.label} must be 1–100."
+                    ErrorCode.INVALID_OPTIONS,
+                    f"{definition.label} must be {definition.minimum}–{definition.maximum}.",
                 )
         if len(values["pages"]) > 4096:
             raise ConversionError(ErrorCode.INVALID_OPTIONS, "Page range is too long.")

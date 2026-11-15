@@ -12,6 +12,7 @@ from local_pdf_toolkit.core.contracts import ConverterSpec, OptionDefinition, Pr
 from local_pdf_toolkit.core.errors import ConversionError, ErrorCode
 from local_pdf_toolkit.core.formats import FileFormat
 from local_pdf_toolkit.core.output import OutputTransaction
+from local_pdf_toolkit.core.sizing import TARGET_OPTIONS, target_bytes, validate_target_options
 
 FORMATS = {
     "JPEG": FileFormat.JPEG,
@@ -101,14 +102,14 @@ class ImageConverter:
                 maximum=20000,
             ),
             OptionDefinition(
-                "target_kib",
-                "Maximum file size (KiB, 0 = no target)",
-                0,
-                "A KiB is 1024 bytes. May reduce quality and resolution.",
-                minimum=0,
-                maximum=1000000,
+                "resize_percent",
+                "Resize (%)",
+                100,
+                "Scale original dimensions, then apply width and height limits.",
+                minimum=1,
+                maximum=100,
             ),
-        )
+        ) + TARGET_OPTIONS
         if output_format in (FileFormat.JPEG, FileFormat.WEBP):
             options += (
                 OptionDefinition(
@@ -123,7 +124,8 @@ class ImageConverter:
             options,
             (
                 "Preserves aspect ratio. Metadata is removed. "
-                "Animated/multi-frame images are rejected. Size targeting may resize.",
+                "Animated/multi-frame images are rejected. Size targeting reduces resolution "
+                "only when explicitly enabled.",
             ),
         )
 
@@ -135,8 +137,10 @@ class ImageConverter:
         definitions = {d.name: d for d in self.spec.options}
         if set(options) - definitions.keys():
             raise ConversionError(ErrorCode.INVALID_OPTIONS, "Unknown image option.")
-        result = {}
+        result = validate_target_options(options)
         for name, definition in definitions.items():
+            if name in result:
+                continue
             value = options.get(name, definition.default)
             if type(value) is not int or not definition.minimum <= value <= definition.maximum:
                 raise ConversionError(ErrorCode.INVALID_OPTIONS, f"Invalid {definition.label}.")
@@ -148,11 +152,18 @@ class ImageConverter:
         cancel_token.raise_if_cancelled()
         image = open_image(input_path)
         try:
+            target = target_bytes(opts, Path(input_path).stat().st_size)
+            scaled = (
+                max(1, image.width * opts["resize_percent"] // 100),
+                max(1, image.height * opts["resize_percent"] // 100),
+            )
             image.thumbnail(
-                (opts["width"] or image.width, opts["height"] or image.height),
+                (
+                    min(scaled[0], opts["width"] or scaled[0]),
+                    min(scaled[1], opts["height"] or scaled[1]),
+                ),
                 Image.Resampling.LANCZOS,
             )
-            target = opts["target_kib"] * 1024
             file_format = self.format.value.upper()
             if self.format in (FileFormat.JPEG, FileFormat.BMP):
                 converted = opaque(image)
@@ -171,10 +182,11 @@ class ImageConverter:
             if transparency is not None:
                 image.info["transparency"] = transparency
             result = None
-            for attempt in range(32):
+            attempts = 32 if opts["allow_downscale"] else 1
+            for attempt in range(attempts):
                 cancel_token.raise_if_cancelled()
                 qualities = (
-                    list(range(opts.get("quality", 85), 0, -5))
+                    list(dict.fromkeys([*range(opts.get("quality", 85), 0, -5), 1]))
                     if "quality" in opts and target
                     else [opts.get("quality", 85)]
                 )
@@ -190,6 +202,8 @@ class ImageConverter:
                 progress(Progress(attempt + 1, 32))
                 if result is not None:
                     break
+                if not opts["allow_downscale"]:
+                    break
                 size = (max(1, int(image.width * 0.8)), max(1, int(image.height * 0.8)))
                 if size == image.size:
                     break
@@ -198,7 +212,9 @@ class ImageConverter:
                 image = resized
             if result is None:
                 raise ConversionError(
-                    ErrorCode.INVALID_OPTIONS, "Target size cannot be met. Increase the size limit."
+                    ErrorCode.INVALID_OPTIONS,
+                    "Target size cannot be met. Increase the size limit "
+                    "or allow resolution reduction.",
                 )
             extension = "jpg" if self.format == FileFormat.JPEG else self.format.value
             name = f"{safe_stem(input_path)}_converted.{extension}"

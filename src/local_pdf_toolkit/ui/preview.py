@@ -2,11 +2,13 @@
 
 import json
 import tempfile
+from contextlib import suppress
 from pathlib import Path
 
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPen, QPixmap
 from PySide6.QtWidgets import (
+    QComboBox,
     QDialog,
     QGraphicsScene,
     QGraphicsView,
@@ -237,6 +239,164 @@ class PreviewDialog(QDialog):
 
     def done(self, result):
         self._save_marks()
+        if self.jobs.running:
+            self._closing = True
+            self.jobs.cancel()
+            return
+        self._temp.cleanup()
+        super().done(result)
+
+    def closeEvent(self, event):
+        if self.jobs.running:
+            self._closing = True
+            self.jobs.cancel()
+            event.ignore()
+        else:
+            self._temp.cleanup()
+            super().closeEvent(event)
+
+
+class ComparisonDialog(QDialog):
+    """Render two bounded pages sequentially, only after an explicit compare action."""
+
+    def __init__(self, source, outputs, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Before / after")
+        self.resize(1040, 700)
+        self._source = Path(source)
+        self._temp = tempfile.TemporaryDirectory(prefix="pdf-toolkit-compare-")
+        self._closing = False
+        self._counts = {}
+        self._pending = []
+        self.jobs = JobController(self)
+        self.jobs.finished.connect(self._finished)
+        layout = QVBoxLayout(self)
+        bar = QHBoxLayout()
+        bar.addWidget(QLabel("Output"))
+        self.output = QComboBox()
+        self.output.setAccessibleName("Converted file to compare")
+        for path in outputs:
+            self.output.addItem(Path(path).name, Path(path))
+        bar.addWidget(self.output, 1)
+        bar.addWidget(QLabel("Page"))
+        self.page = QSpinBox()
+        self.page.setAccessibleName("Comparison page")
+        self.page.setRange(1, 1)
+        bar.addWidget(self.page)
+        layout.addLayout(bar)
+        panes = QHBoxLayout()
+        self.canvases = []
+        self.details = []
+        for heading in ("Original", "Converted"):
+            column = QVBoxLayout()
+            title = QLabel(heading)
+            title.setObjectName("section")
+            column.addWidget(title)
+            details = QLabel("Rendering preview…")
+            details.setWordWrap(True)
+            details.setAccessibleName(heading + " file size and dimensions")
+            column.addWidget(details)
+            canvas = PageCanvas()
+            canvas.setAccessibleName(heading + " page preview")
+            column.addWidget(canvas, 1)
+            panes.addLayout(column, 1)
+            self.canvases.append(canvas)
+            self.details.append(details)
+        layout.addLayout(panes, 1)
+        self.feedback = QLabel(
+            "Preview only. File sizes are exact; previews fit the available space. "
+            "Shorter documents stay on their last page."
+        )
+        self.feedback.setWordWrap(True)
+        layout.addWidget(self.feedback)
+        close = QPushButton("Close")
+        close.clicked.connect(self.close)
+        layout.addWidget(close)
+        self.output.currentIndexChanged.connect(self._output_changed)
+        self.page.valueChanged.connect(self._request)
+        self._request()
+
+    def _output_changed(self, *_):
+        self.page.blockSignals(True)
+        self.page.setValue(1)
+        self.page.blockSignals(False)
+        self._request()
+
+    def _request(self, *_):
+        if self.jobs.running:
+            return
+        self.output.setEnabled(False)
+        self.page.setEnabled(False)
+        self._pending = list(enumerate((self._source, self.output.currentData())))
+        for canvas, detail in zip(self.canvases, self.details, strict=True):
+            canvas.scene().clear()
+            canvas._image_rect = QRectF()
+            detail.setText("Rendering preview…")
+        self._next()
+
+    def _next(self):
+        if not self._pending:
+            self.output.setEnabled(True)
+            self.page.setEnabled(True)
+            count = max(
+                self._counts.get(self._source, 1),
+                self._counts.get(self.output.currentData(), 1),
+            )
+            self.page.blockSignals(True)
+            self.page.setMaximum(count)
+            self.page.blockSignals(False)
+            return
+        self._side, self._path = self._pending.pop(0)
+        self._rendered_page = min(self.page.value(), self._counts.get(self._path, 1))
+        try:
+            self.jobs.start(
+                PreviewConverter(),
+                self._path,
+                Path(self._temp.name),
+                {"page": self._rendered_page},
+            )
+        except Exception:
+            self.details[self._side].setText("Could not start preview.")
+            self._next()
+
+    def _finished(self, paths, error):
+        if self._closing:
+            self._temp.cleanup()
+            super().done(QDialog.DialogCode.Rejected)
+            return
+        if error:
+            self.details[self._side].setText("Preview unavailable. " + error[1])
+        else:
+            try:
+                info = json.loads(paths[1].read_text(encoding="utf-8"))
+                self._counts[self._path] = info["pages"]
+                self.canvases[self._side].load(paths[0])
+                width, height = info.get("native_width"), info.get("native_height")
+                dimensions = (
+                    f"{width:g} × {height:g} {info['native_unit']}"
+                    if width is not None and height is not None
+                    else "Dimensions unavailable"
+                )
+                size = info.get("source_bytes")
+                details = f"{size:,} bytes · " if size is not None else ""
+                self.details[self._side].setText(
+                    f"{self._path.name}\n{details}{dimensions}\n"
+                    f"Page {self._rendered_page} of {info['pages']}"
+                    + (
+                        " · Office layout is approximate"
+                        if info.get("office_approximation")
+                        else ""
+                    )
+                )
+            except (OSError, ValueError, KeyError, TypeError):
+                self.details[self._side].setText("Could not read preview details.")
+            finally:
+                for path in paths:
+                    with suppress(OSError):
+                        path.unlink(missing_ok=True)
+        self._next()
+
+    def done(self, result):
         if self.jobs.running:
             self._closing = True
             self.jobs.cancel()

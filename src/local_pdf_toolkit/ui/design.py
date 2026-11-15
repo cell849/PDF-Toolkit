@@ -46,7 +46,7 @@ def apply_theme(window, dark=None):
             border-radius: 14px;
             }}
         QLabel {{ background: transparent; border: none; }}
-        QWidget#options {{ background: transparent; }}
+        QWidget#options, QWidget#inlineControl, QSlider, QCheckBox {{ background: transparent; }}
         QLabel#title {{ font-size: 30px; font-weight: 650; }}
         QLabel#section {{ font-size: 17px; font-weight: 600; }}
         QLabel#muted {{ color: {secondary}; }}
@@ -65,7 +65,7 @@ def apply_theme(window, dark=None):
             }}
         QPushButton:hover {{ border-color: {accent}; background: {selection}; }}
         QPushButton:pressed {{ background: {selection}; border-color: {accent}; }}
-        QPushButton:focus, QLineEdit:focus, QSpinBox:focus, QComboBox:focus {{
+        QPushButton:focus, QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {{
             border: 2px solid {accent};
             }}
         QPushButton#primary {{ background: {accent};
@@ -89,7 +89,7 @@ def apply_theme(window, dark=None):
         QListWidget::item:selected {{ background: {selection}; color: {accent}; }}
         QListWidget::item:focus {{ border: 1px solid {accent}; }}
         QListWidget#navigation {{ background: transparent; border: 0; }}
-        QLineEdit, QSpinBox, QComboBox {{ background: {surface};
+        QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {{ background: {surface};
             color: {text};
             border: 1px solid {border};
             border-radius: 8px;

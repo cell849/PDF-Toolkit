@@ -5,6 +5,7 @@ from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QDoubleSpinBox,
     QFileDialog,
     QLineEdit,
     QMainWindow,
@@ -75,6 +76,32 @@ class MainWindow(QMainWindow):
         dialog = PreviewDialog(self._paths[index], self)
         dialog.exec()
         dialog.deleteLater()
+
+    def _comparison_paths(self):
+        index = self.files.currentRow()
+        if not 0 <= index < len(self._paths):
+            return None, ()
+        outputs = tuple(
+            path for path in self._results.get(index, ()) if path.suffix.lower() != ".json"
+        )
+        return self._paths[index], outputs
+
+    def _open_comparison(self):
+        if self._active:
+            return
+        source, outputs = self._comparison_paths()
+        if source is None or not outputs:
+            self.statusBar().showMessage("Choose a completed file to compare its output.")
+            return
+        from local_pdf_toolkit.ui.preview import ComparisonDialog
+
+        dialog = ComparisonDialog(source, outputs, self)
+        dialog.exec()
+        dialog.deleteLater()
+
+    def _sync_comparison(self, *_):
+        _, outputs = self._comparison_paths()
+        self.compare_button.setEnabled(bool(outputs) and not self._active)
 
     def _open_report(self):
         import json
@@ -197,10 +224,36 @@ class MainWindow(QMainWindow):
                     "Inspect one file, or compare original then cleaned copy. Values stay masked."
                 )
         for option in spec.options:
+            if option.name == "target_kib":
+                self._editors[option.name] = lambda: 0
+                continue
+            if option.name == "target_unit" and "target_value" in self._editors:
+                continue
             if spec.operation_id == "pdf.redact" and option.name == "source_sha256":
                 self._editors[option.name] = self._redaction_control.digest
                 continue
-            if spec.operation_id == "pdf.redact" and option.name == "regions":
+            if option.name == "target_value":
+                from local_pdf_toolkit.ui.controls import TargetSizeEditor
+
+                unit = next(item for item in spec.options if item.name == "target_unit")
+                widget = TargetSizeEditor(option.default, unit.default, unit.choices)
+                getter = widget.amount.value
+                self._editors[unit.name] = widget.unit.currentData
+            elif option.name in ("quality", "resize_percent") or (
+                option.name == "dpi" and not option.choices
+            ):
+                from local_pdf_toolkit.ui.controls import SliderNumber
+
+                widget = SliderNumber(
+                    option.minimum if option.minimum is not None else 1,
+                    option.maximum if option.maximum is not None else 1200,
+                    option.default,
+                    option.label,
+                    suffix="%" if option.name == "resize_percent" else "",
+                    landmarks=(72, 96, 150, 200, 300, 600) if option.name == "dpi" else (),
+                )
+                getter = widget.value
+            elif spec.operation_id == "pdf.redact" and option.name == "regions":
                 from local_pdf_toolkit.ui.redaction import RedactionControl
 
                 widget = RedactionControl(self)
@@ -224,6 +277,15 @@ class MainWindow(QMainWindow):
                 )
                 widget.setValue(option.default)
                 getter = widget.value
+            elif isinstance(option.default, float):
+                widget = QDoubleSpinBox()
+                widget.setDecimals(4)
+                widget.setRange(
+                    option.minimum if option.minimum is not None else 0,
+                    option.maximum if option.maximum is not None else 1_000_000,
+                )
+                widget.setValue(option.default)
+                getter = widget.value
             else:
                 widget = QLineEdit(str(option.default))
                 if option.name == "password":
@@ -234,6 +296,7 @@ class MainWindow(QMainWindow):
                 if spec.operation_id == "pdf.redact" and option.name == "regions"
                 else option.description
             )
+            widget.setAccessibleName(option.label)
             self.form.addRow(option.label, widget)
             self._editors[option.name] = getter
         self.notice.setText(" ".join(spec.limitations))
@@ -278,6 +341,7 @@ class MainWindow(QMainWindow):
         ):
             button.setVisible(bool(self._paths))
         self.file_heading.setText(f"Files · {len(self._paths)}" if self._paths else "Files")
+        self._sync_comparison()
 
     def _clear(self):
         self._paths.clear()
@@ -322,6 +386,7 @@ class MainWindow(QMainWindow):
             widget.setEnabled(not active)
         self.cancel_button.setEnabled(active)
         self.start_button.setEnabled(not active and self.operation_list.currentRow() >= 0)
+        self._sync_comparison()
 
     def _start(self):
         if self._active or (not self._retrying and self.operation_list.currentRow() < 0):
@@ -415,6 +480,7 @@ class MainWindow(QMainWindow):
             self.files.item(index).setText(message)
             self.files.item(index).setToolTip(message + "\n" + "\n".join(map(str, paths)))
         self.report_button.setEnabled(any(self._results.values()))
+        self._sync_comparison()
         QTimer.singleShot(0, self._next)
 
     def _cancel(self):
@@ -465,6 +531,7 @@ class MainWindow(QMainWindow):
         self.files.setCurrentRow(target)
         self._failed.clear()
         self._results.clear()
+        self._sync_comparison()
 
     def _remove(self):
         index = self.files.currentRow()
@@ -475,6 +542,7 @@ class MainWindow(QMainWindow):
         self._sync_files()
         self._failed.clear()
         self._results.clear()
+        self._sync_comparison()
 
     def _retry(self):
         if self._active or not self._failed:

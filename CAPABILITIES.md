@@ -62,7 +62,7 @@ text copy tool. Every currently accepted input format has an explicit privacy po
 See docs/FORMAT_COVERAGE.md for payload restrictions and common unsupported formats.
 
 
-## Locally committed additions
+## v0.6.0 additions
 
 40 registered tools. Metadata inspector compares parsed category counts without
 exporting private values. Selected PDFs/images and supported Office documents
@@ -77,5 +77,10 @@ audio-only becomes FLAC; other tracks, cover art, chapters and source tags are
 dropped. These re-encode media and may change quality/color/timing. Visible and
 audible personal information remains. See docs/METADATA.md.
 
-These changes have not been published as a Windows download. Saved presets were
+Windows release publication is gated by its Actions test/package run. Saved presets were
 excluded at the user's request. There are no cloud or AI tools.
+
+Custom PDF render/compress DPI accepts 10–1200 within the 40 MP guard. Image and PDF
+size targets accept editable KB/MB/KiB/MiB amounts or percent to keep of original
+bytes; preserving resolution is default. Image percentage resizing and explicit
+size-driven downscaling are available. Before/after previews render on demand.

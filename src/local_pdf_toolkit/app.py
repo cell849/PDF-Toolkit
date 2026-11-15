@@ -62,7 +62,7 @@ def main() -> int:
         return self_test()
     app = QApplication(sys.argv)
     app.setApplicationName("Local PDF Toolkit")
-    app.setApplicationVersion("0.5.0")
+    app.setApplicationVersion("0.6.0")
     window = MainWindow(build_registry())
     window.show()
     return app.exec()
