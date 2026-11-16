@@ -122,3 +122,30 @@ mode and stored DPI when available. Office packages show structural counts (such
 as sheets/slides/paragraphs), not rendered page layouts or inferred font inventories.
 Other accepted formats provide verified type/size. Names may contain personal text;
 use the separate masked metadata inspector for a privacy inventory.
+
+## Image comparison, paper normalization and recovery
+
+**Compare image formats** generates JPEG, PNG and WebP copies at identical,
+EXIF-oriented pixel dimensions with editable JPEG/WebP quality. All three outputs
+are saved atomically; use Compare and its output selector for previews and exact
+sizes. JPEG composites transparency onto white. Metadata is removed; multi-frame
+images are rejected. This is a visual comparison, not an automatic quality score.
+
+**Normalize page sizes** supports selected page ranges, DIN A0–A10, B0–B10 and
+C0–C10, Letter/Legal/Tabloid and custom dimensions in mm/cm/in/pt. Orientation can
+follow each page or use portrait/landscape. Contain fits the full visible page;
+cover fills and crops visible edges. Margins are in mm. Text/vectors are retained
+on selected pages; annotation/form appearances become permanent, with links and
+interactivity removed. Unselected pages are copied. Bookmarks, attachments,
+signatures and advanced document features are not preserved. Cropping is not
+redaction. Page-size, page-count and render guardrails still apply.
+
+**Tools → Clean up interrupted jobs** inspects registered staging jobs and offers
+explicit cleanup. Startup checks only journal names and offers a review hint.
+Per-job OS locks prevent cleanup of active jobs across app instances. Original
+and published files are never removed by recovery; interrupted batches may retain
+partial published outputs. Unknown folders, links, changed ownership and nested
+staging contents are refused. Pre-existing untracked crash leftovers are not
+swept. A writable per-user recovery state directory is required. Journals contain
+staging/output paths and bounded output names, never file contents/passwords;
+normal completion removes them, while interrupted records persist until cleanup.

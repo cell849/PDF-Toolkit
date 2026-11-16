@@ -276,7 +276,12 @@ class ComparisonDialog(QDialog):
         self.output = QComboBox()
         self.output.setAccessibleName("Converted file to compare")
         for path in outputs:
-            self.output.addItem(Path(path).name, Path(path))
+            path = Path(path)
+            try:
+                caption = f"{path.name} · {path.stat().st_size:,} bytes"
+            except OSError:
+                caption = f"{path.name} · unavailable"
+            self.output.addItem(caption, path)
         bar.addWidget(self.output, 1)
         bar.addWidget(QLabel("Page"))
         self.page = QSpinBox()

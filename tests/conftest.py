@@ -76,3 +76,11 @@ def isolated_desktop_preferences(tmp_path):
     )
     yield
     QSettings.setDefaultFormat(previous)
+
+
+@pytest.fixture(autouse=True)
+def isolated_recovery_registry(tmp_path_factory, monkeypatch):
+    # Spawned workers inherit these locations; tests never touch a user's journals.
+    root = tmp_path_factory.mktemp("recovery-registry")
+    monkeypatch.setenv("XDG_STATE_HOME", str(root / "state"))
+    monkeypatch.setenv("LOCALAPPDATA", str(root / "localappdata"))

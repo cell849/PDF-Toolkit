@@ -4,6 +4,8 @@ import os
 import tempfile
 from pathlib import Path
 
+from local_pdf_toolkit.core.recovery import StagingJournal
+
 
 class OutputTransaction:
     def __init__(self, directory: Path) -> None:
@@ -13,8 +15,17 @@ class OutputTransaction:
         self._temp = tempfile.TemporaryDirectory(prefix=".pdf-toolkit-", dir=self.directory)
         self.staging = Path(self._temp.name)
         self._published: list[Path] = []
+        try:
+            self._journal = StagingJournal(self.staging)
+        except BaseException:
+            self._temp.cleanup()
+            raise
 
     def publish(self, names: list[str], cancel_token) -> tuple[Path, ...]:
+        for name in names:
+            if name == ".pdf-toolkit-owner":
+                raise ValueError("Reserved output name.")
+        self._journal.before_publish(names)
         for name in names:
             if Path(name).name != name or name in (".", ".."):
                 raise ValueError("Invalid output name.")
@@ -47,7 +58,12 @@ class OutputTransaction:
                         if cleanup_error is None:
                             cleanup_error = exc
         finally:
-            self._temp.cleanup()
+            completed = False
+            try:
+                self._temp.cleanup()
+                completed = True
+            finally:
+                self._journal.close(completed=completed)
         if cleanup_error is not None:
             cleanup_error.add_note("Incomplete outputs remain; check the output folder.")
             raise cleanup_error

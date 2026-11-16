@@ -408,3 +408,69 @@ def test_inspection_heading_counts_pending_files_and_cache_is_reused(
     assert workspace._probe_jobs.running
     inspected(workspace)
     assert workspace._file_ready(paths[0])[0] is False
+
+
+def test_image_format_comparison_worker_and_normalization_controls(workspace, tmp_path):
+    source = tmp_path / "photo.png"
+    with Image.new("RGBA", (120, 80), (0, 100, 200, 180)) as image:
+        image.save(source)
+    choose(workspace, "image.compare_formats")
+    workspace.add_paths((source,))
+    process(workspace, tmp_path)
+    assert not workspace._failed
+    assert {p.suffix for p in workspace._results[0]} == {".jpg", ".png", ".webp"}
+    assert "JPEG" in workspace.result_detail.text() or "JPG" in workspace.result_detail.text()
+    assert workspace.result_compare.isVisible()
+    choose(workspace, "pdf.normalize_pages")
+    paper = workspace._option_rows["paper"][0]
+    assert paper.findData("A0") >= 0 and paper.findData("C10") >= 0
+    assert workspace._option_rows["custom_width"][0].isHidden()
+    paper.setCurrentIndex(paper.findData("custom"))
+    assert not workspace._option_rows["custom_width"][0].isHidden()
+    paper.setCurrentIndex(paper.findData("A4"))
+    assert workspace._option_rows["custom_width"][0].isHidden()
+
+
+def test_recovery_dialog_requires_confirmation_and_preserves_outputs(
+    workspace, tmp_path, monkeypatch
+):
+    from PySide6.QtWidgets import QMessageBox
+
+    from local_pdf_toolkit.core.contracts import CancellationToken
+    from local_pdf_toolkit.core.output import OutputTransaction
+
+    job = OutputTransaction(tmp_path)
+    (job.staging / "saved.txt").write_text("keep")
+    job.publish(["saved.txt"], CancellationToken())
+    job._temp._finalizer.detach()
+    job._journal.close(completed=False)
+    monkeypatch.setattr(QMessageBox, "question", lambda *args: QMessageBox.StandardButton.No)
+    workspace._show_recovery()
+    assert job.staging.exists()
+    monkeypatch.setattr(QMessageBox, "question", lambda *args: QMessageBox.StandardButton.Yes)
+    workspace._show_recovery()
+    assert not job.staging.exists()
+    assert (tmp_path / "saved.txt").read_text() == "keep"
+
+
+def test_comparison_viewer_renders_each_format_candidate(workspace, tmp_path):
+    from local_pdf_toolkit.ui.preview import ComparisonDialog
+
+    source = tmp_path / "photo.png"
+    with Image.new("RGB", (120, 80), "red") as image:
+        image.save(source)
+    choose(workspace, "image.compare_formats")
+    workspace.add_paths((source,))
+    process(workspace, tmp_path)
+    dialog = ComparisonDialog(source, workspace._results[0], workspace)
+    dialog.show()
+    try:
+        for index in range(3):
+            dialog.output.setCurrentIndex(index)
+            wait_until(lambda: not dialog.jobs.running and not dialog._pending, "candidate preview")
+            assert dialog.output.currentData() == workspace._results[0][index]
+            assert "bytes" in dialog.details[1].text()
+            assert "120" in dialog.details[1].text() and "80" in dialog.details[1].text()
+    finally:
+        dialog.close()
+        wait_until(lambda: not dialog.jobs.running, "comparison close")

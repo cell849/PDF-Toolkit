@@ -88,6 +88,8 @@ def panel():
 
 def tool_description(spec):
     descriptions = {
+        "image.compare_formats": "Compare JPEG, PNG and WebP sizes and appearance",
+        "pdf.normalize_pages": "Fit selected pages to DIN or custom paper sizes",
         "file.rename_copies": "Preview numbered names and save separate copies",
         "document.details": "View fonts, page sizes, encryption and attachments",
         "image.to_pdf": "Combine ordered images into a PDF",
@@ -668,6 +670,10 @@ def add_menus(w):
     availability.triggered.connect(lambda: getattr(w, "_show_availability", lambda: None)())
     tools_menu.addSeparator()
     tools_menu.addAction(availability)
+    recovery = QAction("Clean up interrupted jobs…", w)
+    w.recovery_action = recovery
+    recovery.triggered.connect(lambda: w._show_recovery())
+    tools_menu.addAction(recovery)
     queue_menu = w.menuBar().addMenu("&Queue")
     w.queue_menu = queue_menu
     for title, callback in (

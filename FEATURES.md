@@ -162,3 +162,17 @@ layout regression coverage; pure live name planning matching atomically publishe
 byte-identical numbered copies; explicit bounded structural reports for PDF/image/
 Office documents with locked-PDF restrictions. No new runtime dependencies.
 User authorized publication as 0.7.2 after verification.
+
+## Approved follow-up — comparison, paper sizes and interrupted jobs
+
+- Image comparison: generate same-dimension JPEG/PNG/WebP candidates locally,
+  choose a quality setting and inspect original/candidate previews with exact
+  sizes. Keep source unchanged, remove descriptive metadata, make transparency
+  differences explicit. Atomic publication and cancellation tests required.
+- PDF normalization: selected pages to DIN A/B/C, common US and custom dimensions,
+  explicit units/orientation/margins and contain/cover behavior. Preserve useful
+  vector/text content; disclose loss of selected-page interactivity. Verify sizes,
+  page selection, render appearance and bounds.
+- Crash recovery: identify owned abandoned staging using per-job OS locks and
+  bounded journals. Offer explicit cleanup; never delete originals or published
+  outputs. Active jobs, PID reuse, symlinks and corrupt records fail safely.

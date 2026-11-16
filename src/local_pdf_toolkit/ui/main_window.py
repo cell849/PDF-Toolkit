@@ -260,6 +260,10 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                 "Inspect fonts, page sizes, encryption and attachments. "
                 "Open the report after saving."
             )
+        if spec.operation_id == "image.compare_formats":
+            self.tool_hint.setText(
+                "Create three same-size candidates, then use Compare to inspect each format."
+            )
         if privacy:
             formats = ", ".join(kind.value.upper() for kind in spec.input_formats)
             self.tool_hint.setText(
@@ -314,6 +318,14 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                         "lossless": "Lossless — keep text and vectors",
                         "rasterized": "Rebuild as page images",
                     }.get(choice, str(choice))
+                    if spec.operation_id == "pdf.normalize_pages" and option.name == "paper":
+                        from local_pdf_toolkit.converters.normalize_pages import PAPER_SIZES_MM
+
+                        if choice in PAPER_SIZES_MM:
+                            width, height = PAPER_SIZES_MM[choice]
+                            display = f"DIN {choice} · {width} × {height} mm"
+                        elif choice == "custom":
+                            display = "Custom dimensions"
                     widget.addItem(display, choice)
                 widget.setCurrentIndex(option.choices.index(option.default))
                 getter = widget.currentData
@@ -387,6 +399,20 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                 "password",
                 "regions",
             }
+            if spec.operation_id == "pdf.normalize_pages":
+                basic.update(
+                    {
+                        "paper",
+                        "orientation",
+                        "custom_width",
+                        "custom_height",
+                        "units",
+                        "fit",
+                        "margin_mm",
+                    }
+                )
+            if spec.operation_id == "image.compare_formats":
+                basic.add("quality")
             target_form = self.form if rename or option.name in basic else self.advanced_form
             display_label = option.label.replace(" (px, 0 = original)", " (px)").replace(
                 " (0 = no target)", ""

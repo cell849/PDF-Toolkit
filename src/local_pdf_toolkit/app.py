@@ -11,10 +11,12 @@ from local_pdf_toolkit.core.registry import ConverterRegistry
 def build_registry():
     from local_pdf_toolkit.converters.compress import PdfCompressConverter
     from local_pdf_toolkit.converters.document_details import DocumentDetailsConverter
+    from local_pdf_toolkit.converters.image_comparison import ImageComparisonConverter
     from local_pdf_toolkit.converters.image_metadata import ImageMetadataConverter
     from local_pdf_toolkit.converters.images import image_converters
     from local_pdf_toolkit.converters.inspector import MetadataInspector
     from local_pdf_toolkit.converters.media_metadata import media_metadata_converters
+    from local_pdf_toolkit.converters.normalize_pages import PdfNormalizePagesConverter
     from local_pdf_toolkit.converters.ocr import ocr_converters
     from local_pdf_toolkit.converters.odf_metadata import OdfMetadataConverter
     from local_pdf_toolkit.converters.office_metadata import OfficeMetadataConverter
@@ -30,6 +32,8 @@ def build_registry():
     registry = ConverterRegistry()
     converters = [PdfImagesConverter(fmt) for fmt in (FileFormat.JPEG, FileFormat.PNG)]
     converters.extend(image_converters())
+    converters.append(ImageComparisonConverter())
+    converters.append(PdfNormalizePagesConverter())
     converters.extend(pdf_tool_converters())
     converters.append(PdfCompressConverter())
     converters.extend(office_converters())

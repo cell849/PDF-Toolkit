@@ -51,6 +51,14 @@ class WorkspaceBehavior:
         self.files.currentRowChanged.connect(self._selection_changed)
         self.files.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.files.customContextMenuRequested.connect(self._file_menu)
+        from local_pdf_toolkit.core.recovery import has_recovery_records
+
+        recovery_hint = has_recovery_records()
+        if recovery_hint:
+            self.recovery_action.setText("Review temporary jobs from previous sessions…")
+            self._show_status(
+                "Temporary job records found. Review them in Tools → Clean up interrupted jobs."
+            )
         self._preferences = QSettings("LocalPDFToolkit", "Desktop")
         geometry = self._preferences.value("windowGeometry")
         if geometry:
@@ -79,7 +87,13 @@ class WorkspaceBehavior:
         self._set_text_size(int(self._preferences.value("textSize", 100)))
         self.settings_action.setChecked(self.width() >= 980)
         self._restore_form_values()
-        self._set_result("ready", "Ready", "Add a file to get started.")
+        self._set_result(
+            "ready",
+            "Ready",
+            "Temporary job records found. Use Tools → Review temporary jobs from previous sessions."
+            if recovery_hint
+            else "Add a file to get started.",
+        )
         self._update_summary()
 
     def _set_text_size(self, percent):
@@ -528,6 +542,18 @@ class WorkspaceBehavior:
             text += f" · Original {self._display_bytes(before)} · {change}"
         if self._tool_id == "pdf.compress" and any(c.get("mode") == "rasterized" for c in configs):
             text += "\nPages converted to images; selectable text, links and forms removed."
+        elif self._tool_id == "image.compare_formats":
+            try:
+                text += (
+                    "\n"
+                    + " · ".join(
+                        f"{p.suffix[1:].upper()}: {self._display_bytes(p.stat().st_size)}"
+                        for p in sorted(documents)
+                    )
+                    + "\nUse Compare to inspect each candidate. All candidates are saved."
+                )
+            except OSError:
+                text += "\nSome candidates are no longer available."
         elif self._tool_id == "file.rename_copies":
             text += "\nByte-identical copies; metadata retained."
         text += "\nOriginal files unchanged."
@@ -656,6 +682,12 @@ class WorkspaceBehavior:
                 )
                 or (key == "allow_downscale" and (not amount or values.get("mode") == "lossless"))
             )
+            if (
+                spec
+                and spec.operation_id == "pdf.normalize_pages"
+                and key in ("custom_width", "custom_height", "units")
+            ):
+                visible = values.get("paper") == "custom"
             editor.setVisible(visible)
             caption.setVisible(visible)
         if spec and spec.operation_id == "metadata.inspect":
@@ -757,6 +789,45 @@ class WorkspaceBehavior:
             if operation is None
             else {}
         )
+
+    def _show_recovery(self):
+        from PySide6.QtWidgets import QMessageBox
+
+        from local_pdf_toolkit.core.recovery import cleanup, list_recoverable
+
+        try:
+            records = list_recoverable()
+        except OSError:
+            QMessageBox.warning(self, "Interrupted jobs", "Could not read recovery records.")
+            return
+        if not records:
+            QMessageBox.information(
+                self, "Interrupted jobs", "No recoverable temporary files found."
+            )
+            return
+        for record in records:
+            message = (
+                f"Interrupted job in {record.output_directory}\n"
+                f"Temporary files: {record.file_count} · "
+                f"{self._display_bytes(record.size_bytes)}\n\n"
+                "Remove this job's temporary files? Saved outputs will be kept. "
+                "An interrupted batch may have saved only some outputs."
+            )
+            if (
+                QMessageBox.question(
+                    self,
+                    "Clean up interrupted job",
+                    message,
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No,
+                )
+                != QMessageBox.StandardButton.Yes
+            ):
+                continue
+            try:
+                cleanup(record)
+            except (OSError, RuntimeError, ValueError) as exc:
+                QMessageBox.warning(self, "Cleanup could not finish", str(exc))
 
     def _show_availability(self):
         dialog = QDialog(self)
