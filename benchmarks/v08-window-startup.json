@@ -1,0 +1,12 @@
+{
+  "description": "Fresh process to offscreen first-window render and clean close; one discarded warmup; Linux synthetic no files; includes process exit",
+  "seconds": [
+    0.448206694003602,
+    0.5139000679992023,
+    0.4480013139982475,
+    0.433319265001046,
+    0.4508176059971447,
+    0.47568528699775925,
+    0.6196884519958985
+  ]
+}

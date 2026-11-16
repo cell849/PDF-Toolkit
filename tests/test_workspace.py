@@ -108,6 +108,8 @@ def test_invalid_preflight_shows_failure_without_finished_success(workspace, tmp
     assert workspace.files.item(0).text().startswith("Failed")
     assert "Finished" not in workspace.feedback.text()
     assert workspace.result_retry.isVisible()
+    assert workspace.document_preview.empty_message.isVisible()
+    assert workspace.document_preview.empty_message.text() == "Preview unavailable for this file."
 
 
 def test_mixed_batch_keeps_valid_outputs_and_reports_invalid_file(

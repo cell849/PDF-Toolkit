@@ -140,6 +140,21 @@ def test_corrupt_later_input_publishes_nothing(sources):
     assert not list(destination.iterdir())
 
 
+def test_corrupt_office_package_is_an_input_error_in_validation_and_conversion(sources):
+    paths, destination = sources
+    broken = paths[0].with_suffix(".docx")
+    broken.write_bytes(b"PK\x03\x04not a valid zip archive")
+    converter = BatchRenameConverter()
+    for action in (
+        lambda: converter.validate_input(broken),
+        lambda: run((paths[1], broken), destination),
+    ):
+        with pytest.raises(ConversionError) as error:
+            action()
+        assert error.value.code == ErrorCode.INVALID_INPUT
+    assert not list(destination.iterdir())
+
+
 def test_duplicate_sources_are_rejected_in_preview_and_worker(sources):
     paths, destination = sources
     with pytest.raises(ConversionError, match="only once"):

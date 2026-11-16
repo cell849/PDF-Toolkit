@@ -166,7 +166,7 @@ def _clean_parts(parts, token, progress):
         if not name.endswith(".rels"):
             continue
         root = _xml(parts[name])
-        if root.tag != f"{{{PKG}}}Relationships":
+        if root.tag != f"{{{PKG}}}Relationships" or (root.text and root.text.strip()):
             _fail("Invalid relationship XML.")
         source = _source_for_relationship(name)
         removed_ids[source] = set()
@@ -178,6 +178,9 @@ def _clean_parts(parts, token, progress):
                 relation.tag != f"{{{PKG}}}Relationship"
                 or not relation.get("Id")
                 or relation.get("Id") in seen
+                or len(relation)
+                or (relation.text and relation.text.strip())
+                or (relation.tail and relation.tail.strip())
             ):
                 _fail("Invalid or duplicate relationship identifier.")
             seen.add(relation.get("Id"))
@@ -256,7 +259,9 @@ def _clean_parts(parts, token, progress):
                         parent.remove(child)
             for element in root.iter():
                 qualified = etree.QName(element)
-                if element.text and element.text.strip() and element.tag != f"{{{A}}}t":
+                if (element.text and element.text.strip() and element.tag != f"{{{A}}}t") or (
+                    element.tail and element.tail.strip()
+                ):
                     _fail("Unsupported hidden XML text outside slide text runs.")
                 if qualified.namespace not in (P, A, R, MC):
                     _fail("Unsupported extension XML remains outside an extension bag.")

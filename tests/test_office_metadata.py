@@ -179,6 +179,39 @@ def test_word_table_revisions_rejected(word, tmp_path):
         run(OfficeMetadataConverter(FileFormat.DOCX), word, tmp_path)
 
 
+@pytest.mark.parametrize("element", ["documentProtection", "writeProtection"])
+def test_word_protection_credentials_are_never_published(word, tmp_path, element):
+    def inject(parts):
+        root = etree.fromstring(parts["word/settings.xml"])
+        protection = etree.SubElement(root, "{" + W + "}" + element)
+        protection.set("{" + W + "}hash", "UHJpdmF0ZVBhc3N3b3JkSGFzaA==")
+        protection.set("{" + W + "}salt", "UHJpdmF0ZVNhbHQ=")
+        if element == "documentProtection":
+            protection.set("{" + W + "}edit", "readOnly")
+            protection.set("{" + W + "}enforcement", "1")
+        parts["word/settings.xml"] = etree.tostring(root)
+
+    change_zip(word, inject)
+    original = word.read_bytes()
+    with pytest.raises(ConversionError, match="Protected Word"):
+        run(OfficeMetadataConverter(FileFormat.DOCX), word, tmp_path)
+    assert word.read_bytes() == original
+    assert list(tmp_path.iterdir()) == [word]
+
+
+def test_word_text_hidden_in_web_view_is_rejected(word, tmp_path):
+    def inject(parts):
+        root = etree.fromstring(parts["word/document.xml"])
+        properties = root.find(".//{" + W + "}rPr")
+        etree.SubElement(properties, "{" + W + "}webHidden")
+        parts["word/document.xml"] = etree.tostring(root)
+
+    change_zip(word, inject)
+    with pytest.raises(ConversionError, match="Hidden Word"):
+        run(OfficeMetadataConverter(FileFormat.DOCX), word, tmp_path)
+    assert list(tmp_path.iterdir()) == [word]
+
+
 def test_office_cancel_keeps_source(word, tmp_path):
     token = CancellationToken()
     with pytest.raises(ConversionCancelled):
@@ -362,6 +395,21 @@ def test_odf_formulas_keep_namespace_and_external_links_fail(tmp_path):
         cell = root.find(".//{" + TABLE + "}table-cell")
         assert cell.get("{" + TABLE + "}formula") == "of:=SUM([.A1:.A2])"
         assert cell.nsmap["of"] == "urn:oasis:names:tc:opendocument:xmlns:of:1.2"
+
+    def external_formula(parts):
+        tree = etree.fromstring(parts["content.xml"])
+        cell = tree.find(".//{" + TABLE + "}table-cell")
+        cell.set("{" + TABLE + "}formula", "of:=['../PrivateWorkbook.ods'#$Sheet1.A1]")
+        parts["content.xml"] = etree.tostring(tree)
+
+    change_zip(path, external_formula)
+    original = path.read_bytes()
+    rejected_output = tmp_path / "rejected"
+    rejected_output.mkdir()
+    with pytest.raises(ConversionError, match="External spreadsheet"):
+        run(OdfMetadataConverter(), path, rejected_output)
+    assert path.read_bytes() == original
+    assert not list(rejected_output.iterdir())
 
 
 def test_rtf_hidden_text_rejected():

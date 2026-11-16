@@ -149,7 +149,8 @@ def clean_odf(parts, token, progress):
                 ):
                     del element.attrib[key]
                 elif attr.localname == "formula" and re.search(
-                    r"(?:WEBSERVICE|HYPERLINK|DDE|RTD|IMAGE)\s*\(|https?://|file:",
+                    r"(?:WEBSERVICE|HYPERLINK|DDE|RTD|IMAGE)\s*\(|https?://|file:|"
+                    r"\[\s*'(?:[^']|'')*'\s*#",
                     element.get(key),
                     re.I,
                 ):

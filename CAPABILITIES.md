@@ -6,10 +6,10 @@ button in the reference screenshots.
 
 | Tool | Supported behavior and limits |
 | --- | --- |
-| PDF → JPEG / PNG | Selected pages; 72/150/300 DPI; JPEG quality; PNG alpha. Rasterizes text. |
+| PDF → JPEG / PNG | Selected pages; editable 10–1200 DPI; JPEG quality; PNG alpha. Rasterizes text. |
 | Images → PDF | Ordered JPEG/PNG/WebP/TIFF/BMP/GIF/AVIF/HEIC inputs (available codecs); image-sized, A4 or Letter pages. Single-frame inputs only. |
 | Image → JPEG / PNG / WebP / TIFF / BMP | Actual-content validation, EXIF orientation, aspect-preserving maximum dimensions; metadata removed. |
-| Target-size images | Maximum KiB, quality and pixel dimensions; reduces quality/resolution as needed. Fails if unattainable. |
+| Target-size images | Editable KB/MB/KiB/MiB or percent-to-keep target; preserves resolution by default. Optional downscaling. Fails if unattainable. |
 | Merge PDF | Selected file-list order; preserves PDF text/vectors. |
 | Split / extract / delete / reorder | Validated page ranges. Reorder requires every page exactly once, in stated order. |
 | Rotate / crop | Selected pages; crop margins in PDF points. Crop is not redaction. |
@@ -24,7 +24,7 @@ button in the reference screenshots.
 | Lossless PDF compression | Structural cleanup/deflation; keeps text and vectors; may not reduce size. |
 | Target-size PDF compression | Explicit rasterized mode; size upper bound, not exact byte count. Discards selectable text, interactive content and links. |
 
-File size uses KiB (1024 bytes). PNG targeting can require resolution reduction;
+File size units are explicit: KB/MB use 1000, KiB/MiB use 1024. PNG targeting can require resolution reduction;
 JPEG/WebP can also reduce quality. Maximum dimensions preserve aspect ratio and
 never enlarge an image. PDF size targeting uses bounded quality/resolution trials;
 very large pages reduce render DPI to stay within the pixel guardrail. If a target

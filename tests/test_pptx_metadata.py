@@ -146,6 +146,31 @@ def test_external_link_rejected(deck, tmp_path):
     assert list(tmp_path.iterdir()) == [deck]
 
 
+@pytest.mark.parametrize("location", ["slide_tail", "relationship_text", "relationship_child"])
+def test_hidden_xml_text_outside_slide_runs_is_not_published(deck, tmp_path, location):
+    def inject(parts):
+        name = (
+            "ppt/slides/slide1.xml"
+            if location == "slide_tail"
+            else "ppt/slides/_rels/slide1.xml.rels"
+        )
+        root = etree.fromstring(parts[name])
+        if location == "slide_tail":
+            root[0].tail = PRIVATE
+        elif location == "relationship_text":
+            root.text = PRIVATE
+        else:
+            etree.SubElement(root[0], "private").text = PRIVATE
+        parts[name] = etree.tostring(root)
+
+    rewrite(deck, inject)
+    original = deck.read_bytes()
+    with pytest.raises(ConversionError):
+        clean(deck, tmp_path)
+    assert deck.read_bytes() == original
+    assert list(tmp_path.iterdir()) == [deck]
+
+
 def test_cancel_no_partial_presentation(deck, tmp_path):
     token = CancellationToken()
     with pytest.raises(ConversionCancelled):

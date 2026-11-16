@@ -3,6 +3,7 @@
 import os
 import stat
 import tempfile
+import zipfile
 from pathlib import Path
 
 from local_pdf_toolkit.converters.file_probe import FileProbeConverter
@@ -85,8 +86,11 @@ def _source_stat(path):
 
 
 def _inspect(path, token=None):
-    with tempfile.TemporaryDirectory(prefix="pdf-toolkit-rename-check-") as folder:
-        details = FileProbeConverter()._inspect(path, Path(folder), token)
+    try:
+        with tempfile.TemporaryDirectory(prefix="pdf-toolkit-rename-check-") as folder:
+            details = FileProbeConverter()._inspect(path, Path(folder), token)
+    except (OSError, ValueError, RuntimeError, zipfile.BadZipFile) as exc:
+        raise ConversionError(ErrorCode.INVALID_INPUT, "Cannot read or parse this input.") from exc
     kind = FileFormat(details["format"])
     if kind not in SUPPORTED:
         raise ConversionError(ErrorCode.UNSUPPORTED_FORMAT, "This file type is not supported.")

@@ -210,7 +210,7 @@ class WorkspaceBehavior:
                     "Choose another file",
                     "The previous file is not compatible with this tool.",
                 )
-        self._rebuild_files()
+        self._rebuild_files(changed_path=path)
         self._selection_changed()
         self._update_summary()
         if (
@@ -275,15 +275,24 @@ class WorkspaceBehavior:
             return False, "This file type is not supported by the selected tool."
         return True, "Ready"
 
-    def _rebuild_files(self):
+    def _rebuild_files(self, changed_path=None):
         selected = self.files.currentRow()
+        changed_index = self._paths.index(changed_path) if changed_path in self._paths else None
+        incremental = (
+            changed_index is not None
+            and self.files.count() == len(self._paths)
+            and self.files.item(changed_index).data(Qt.ItemDataRole.UserRole) == changed_path
+        )
         icons = {
             self.files.item(i).data(Qt.ItemDataRole.UserRole): self.files.item(i).icon()
-            for i in range(self.files.count())
+            for i in (() if incremental else range(self.files.count()))
         }
         self.files.blockSignals(True)
-        self.files.clear()
-        for index, path in enumerate(self._paths):
+        if not incremental:
+            self.files.clear()
+        indices = (changed_index,) if incremental else range(len(self._paths))
+        for index in indices:
+            path = self._paths[index]
             info = self._records.get(path, {})
             ready, reason = self._file_ready(path)
             state = (
@@ -309,7 +318,11 @@ class WorkspaceBehavior:
                 details += f" · {info['pages']} pages"
             elif info.get("width") and info.get("height"):
                 details += f" · {info['width']} × {info['height']} {info.get('unit', 'px')}"
-            self.files.addItem(f"{state} — {path.name}\n{details}")
+            text = f"{state} — {path.name}\n{details}"
+            if incremental:
+                self.files.item(index).setText(text)
+            else:
+                self.files.addItem(text)
             self.files.item(index).setToolTip(
                 path.name + "\n" + self._errors.get(index, reason) + "\n" + details
             )
@@ -348,6 +361,13 @@ class WorkspaceBehavior:
         stale = bool(outputs and saved != self._current_values())
         ready, reason = self._file_ready(path) if path else (False, "")
         if not self._active:
+            self.document_preview.empty_message.setText(
+                "Document preview\nAdd a file to get started."
+                if path is None
+                else "Inspecting file…"
+                if ready is None
+                else "Preview unavailable for this file."
+            )
             self.document_preview.set_document(
                 path if ready else None,
                 tuple(p for p in outputs if p.suffix.lower() != ".json"),

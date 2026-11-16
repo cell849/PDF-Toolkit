@@ -86,6 +86,9 @@ properties, reviewer/comment/history fields, ZIP metadata and supported embedded
 raster-image metadata. DOCX ordinary text changes are accepted in the copy;
 complex table revisions/content controls are rejected. Excel formulas, visible
 cells and normal formatting remain; protected/hidden content is rejected.
+Protected Word documents (including write protection) and text hidden in Word's
+web view are rejected. OpenDocument external formula references are rejected,
+including relative references to other spreadsheet files.
 OpenDocument properties/settings/comments/history/thumbnails are removed. RTF
 cleanup is limited to basic text/formatting files and rejects unsupported payloads.
 

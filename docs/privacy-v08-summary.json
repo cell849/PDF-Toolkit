@@ -1,0 +1,249 @@
+{
+  "scope": "Synthetic v0.8 metadata-cleaning and document-details audit; bounded corroboration, not exhaustive anonymity certification.",
+  "date_utc": "2026-11-16",
+  "tools": {
+    "ExifTool": "13.55",
+    "qpdf": "12.2.0",
+    "ffprobe": "ffprobe version 7.1.5-0+deb13u1 Copyright (c) 2007-2026 the FFmpeg developers",
+    "Poppler": "pdftotext version 25.03.0"
+  },
+  "methods": {
+    "images_pdf_rtf": "Independent ExifTool before/after metadata extraction; source canary must be observed before removal is credited.",
+    "office_packages": "Separate Python standard-library ZIP/XML reader scans all XML text/attributes/tails; raw decompressed parts and neutral ZIP fields also checked.",
+    "media": "Independent full ffprobe stream/container/chapter output; MP4 H.264/AAC and audio-only FLAC confirmed.",
+    "flattened_pdf": "Poppler pdftotext returned no selectable text; qpdf --check succeeded.",
+    "originals": "SHA-256 unchanged for every source.",
+    "reports": "Synthetic private canary absent from each cleaning sidecar."
+  },
+  "limitations": [
+    "ExifTool cannot decode Office ZIP metadata in this environment because its optional Perl Archive::Zip module is unavailable; Office cases use the separate ZIP/XML reader instead.",
+    "Fixtures are synthetic and small. No universal forensic or anonymity claim is made.",
+    "Visible personal content and documented hidden Office content remain outside the metadata-cleaning policy.",
+    "BMP metadata trailer removal is covered by application behavior/tests; this independent tagged-fixture matrix covers the image formats listed in cases."
+  ],
+  "confirmed_bugs_fixed": [
+    {
+      "issue": "Word protection hash/salt were retained by cleanup. Word text hidden only in web view bypassed the vanish check.",
+      "resolution": "Reject documentProtection/writeProtection and enabled webHidden before publishing.",
+      "regressions": [
+        "test_word_protection_credentials_are_never_published",
+        "test_word_text_hidden_in_web_view_is_rejected"
+      ]
+    },
+    {
+      "issue": "PPTX non-whitespace element tails and malformed relationship text/children could retain private data.",
+      "resolution": "Reject hidden XML text outside slide text runs and malformed relationship bodies.",
+      "regressions": [
+        "test_hidden_xml_text_outside_slide_runs_is_not_published"
+      ]
+    },
+    {
+      "issue": "An ODF relative external formula such as of:=['../PrivateWorkbook.ods'#$Sheet1.A1] survived cleanup.",
+      "resolution": "Reject OpenFormula quoted external-document references, including relative paths; local formulas remain supported.",
+      "regressions": [
+        "test_odf_formulas_keep_namespace_and_external_links_fail"
+      ]
+    },
+    {
+      "issue": "Metadata inspector validation failed for real HEIC because Pillow reports HEIF, which is not a FileFormat identifier.",
+      "resolution": "Map decoded image container through the existing registered FORMATS mapping.",
+      "regressions": [
+        "test_heic_inspection_uses_the_registered_format"
+      ]
+    }
+  ],
+  "document_details": {
+    "independent_readers": [
+      "pdffonts",
+      "pdfinfo -f 2 -l 2 -box",
+      "pdfdetach -list"
+    ],
+    "verified": [
+      "One embedded DejaVuSans font and one standard Helvetica font correctly distinguish embedding flags.",
+      "A 250 by 350 point PDF page rotated 90 degrees reports 350 by 250 display points and rotation 90.",
+      "Attachment name and 12-byte size are correct; no extraction was requested.",
+      "Source SHA-256 remains unchanged."
+    ],
+    "warnings": [
+      "Poppler emitted a fontconfig cache warning; commands returned success and reported font/geometry/attachment facts."
+    ]
+  },
+  "case_count": 17,
+  "cases": [
+    {
+      "case": "image-jpg",
+      "source": "photo.jpg",
+      "output": "clean-image-6c408e786701.jpg",
+      "source_canary_observed": true,
+      "output_canary_observed": false,
+      "report_canary_observed": false,
+      "original_sha256_unchanged": true
+    },
+    {
+      "case": "image-png",
+      "source": "photo.png",
+      "output": "clean-image-31d0141aa49d.png",
+      "source_canary_observed": true,
+      "output_canary_observed": false,
+      "report_canary_observed": false,
+      "original_sha256_unchanged": true
+    },
+    {
+      "case": "image-webp",
+      "source": "photo.webp",
+      "output": "clean-image-d965dd81c01a.webp",
+      "source_canary_observed": true,
+      "output_canary_observed": false,
+      "report_canary_observed": false,
+      "original_sha256_unchanged": true
+    },
+    {
+      "case": "image-tiff",
+      "source": "photo.tiff",
+      "output": "clean-image-eed0ab68ea28.tiff",
+      "source_canary_observed": true,
+      "output_canary_observed": false,
+      "report_canary_observed": false,
+      "original_sha256_unchanged": true
+    },
+    {
+      "case": "image-gif",
+      "source": "photo.gif",
+      "output": "clean-image-79a2eca9b41f.gif",
+      "source_canary_observed": true,
+      "output_canary_observed": false,
+      "report_canary_observed": false,
+      "original_sha256_unchanged": true
+    },
+    {
+      "case": "image-avif",
+      "source": "photo.avif",
+      "output": "clean-image-28b1795e3b7e.avif",
+      "source_canary_observed": true,
+      "output_canary_observed": false,
+      "report_canary_observed": false,
+      "original_sha256_unchanged": true
+    },
+    {
+      "case": "image-heic",
+      "source": "photo.heic",
+      "output": "clean-image-75599e5da54f.heic",
+      "source_canary_observed": true,
+      "output_canary_observed": false,
+      "report_canary_observed": false,
+      "original_sha256_unchanged": true
+    },
+    {
+      "case": "docx",
+      "source": "document.docx",
+      "output": "clean-office-3e9fb89c56a1.docx",
+      "source_canary_observed": true,
+      "output_canary_observed": false,
+      "report_canary_observed": false,
+      "original_sha256_unchanged": true,
+      "output_zip_canary": false,
+      "neutral_zip_fields": true
+    },
+    {
+      "case": "xlsx",
+      "source": "spreadsheet.xlsx",
+      "output": "clean-office-aeb27774e639.xlsx",
+      "source_canary_observed": true,
+      "output_canary_observed": false,
+      "report_canary_observed": false,
+      "original_sha256_unchanged": true,
+      "output_zip_canary": false,
+      "neutral_zip_fields": true
+    },
+    {
+      "case": "pptx",
+      "source": "presentation.pptx",
+      "output": "clean-presentation-ac01b7e60420.pptx",
+      "source_canary_observed": true,
+      "output_canary_observed": false,
+      "report_canary_observed": false,
+      "original_sha256_unchanged": true,
+      "output_zip_canary": false,
+      "neutral_zip_fields": true
+    },
+    {
+      "case": "odt",
+      "source": "opendocument.odt",
+      "output": "clean-office-7766ce371241.odt",
+      "source_canary_observed": true,
+      "output_canary_observed": false,
+      "report_canary_observed": false,
+      "original_sha256_unchanged": true,
+      "output_zip_canary": false,
+      "neutral_zip_fields": true
+    },
+    {
+      "case": "ods",
+      "source": "opendocument.ods",
+      "output": "clean-office-4d8806fb00b4.ods",
+      "source_canary_observed": true,
+      "output_canary_observed": false,
+      "report_canary_observed": false,
+      "original_sha256_unchanged": true,
+      "output_zip_canary": false,
+      "neutral_zip_fields": true
+    },
+    {
+      "case": "odp",
+      "source": "opendocument.odp",
+      "output": "clean-office-4ae9b1360ba6.odp",
+      "source_canary_observed": true,
+      "output_canary_observed": false,
+      "report_canary_observed": false,
+      "original_sha256_unchanged": true,
+      "output_zip_canary": false,
+      "neutral_zip_fields": true
+    },
+    {
+      "case": "rtf",
+      "source": "basic.rtf",
+      "output": "clean-text-88a6899917fc.rtf",
+      "source_canary_observed": true,
+      "output_canary_observed": false,
+      "report_canary_observed": false,
+      "original_sha256_unchanged": true
+    },
+    {
+      "case": "pdf",
+      "source": "private.pdf",
+      "output": "clean-document-dd9a8e83f3a2.pdf",
+      "source_canary_observed": true,
+      "output_canary_observed": false,
+      "report_canary_observed": false,
+      "original_sha256_unchanged": true,
+      "poppler_text_empty": true,
+      "qpdf_check": "Passed: no syntax or stream encoding errors found."
+    },
+    {
+      "case": "media-video",
+      "source": "recording.mkv",
+      "output": "clean-media-f9815b81752c.mp4",
+      "source_canary_observed": true,
+      "output_canary_observed": false,
+      "report_canary_observed": false,
+      "original_sha256_unchanged": true,
+      "output_codecs": [
+        "h264",
+        "aac"
+      ]
+    },
+    {
+      "case": "media-audio",
+      "source": "recording.mp3",
+      "output": "clean-media-15a1374f1017.flac",
+      "source_canary_observed": true,
+      "output_canary_observed": false,
+      "report_canary_observed": false,
+      "original_sha256_unchanged": true,
+      "output_codecs": [
+        "flac"
+      ]
+    }
+  ],
+  "test_review": "Retained format/parser rejection, original preservation, output rollback and independent reader cases. Added regressions target reproduced failure paths; no redundant implementation-mirroring tests were added."
+}

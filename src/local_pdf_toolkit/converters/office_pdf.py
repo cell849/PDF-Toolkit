@@ -210,14 +210,15 @@ def _run(command, timeout, cancel_token):
         if process.poll() is None:
             if os.name == "nt":
                 # soffice.exe may supervise soffice.bin; terminate its whole tree.
-                subprocess.run(
-                    ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-                    stdin=subprocess.DEVNULL,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    timeout=5,
-                    check=False,
-                )
+                with contextlib.suppress(OSError, subprocess.TimeoutExpired):
+                    subprocess.run(
+                        ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                        stdin=subprocess.DEVNULL,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        timeout=5,
+                        check=False,
+                    )
             else:
                 with contextlib.suppress(ProcessLookupError):
                     os.killpg(process.pid, signal.SIGTERM)
@@ -230,13 +231,12 @@ def _run(command, timeout, cancel_token):
                     with contextlib.suppress(ProcessLookupError):
                         os.killpg(process.pid, signal.SIGKILL)
                 process.wait()
-            finally:
-                if os.name != "nt":
-                    # A supervisor may exit before its descendants handle TERM.
-                    with contextlib.suppress(ProcessLookupError):
-                        os.killpg(process.pid, signal.SIGKILL)
         else:
             process.wait()
+        if os.name != "nt":
+            # A supervisor can also exit normally before its descendants finish.
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(process.pid, signal.SIGKILL)
 
 
 class OfficePdfConverter:

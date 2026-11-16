@@ -35,7 +35,20 @@ jobs:
       - name: Run tests
         timeout-minutes: 5
         run: ./.venv/Scripts/python.exe -m pytest -vv --timeout=60
+      - name: Native Windows UI workflows at 150% display scale
+        env:
+          QT_QPA_PLATFORM: windows
+          QT_SCALE_FACTOR: '1.5'
+        run: ./.venv/Scripts/python.exe packaging/verify_ui.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Windows-UI-evidence
+          path: ui-evidence/
+          if-no-files-found: warn
       - shell: pwsh
+        env:
+          QT_QPA_PLATFORM: windows
         run: ./packaging/build_windows.ps1
       - uses: actions/upload-artifact@v4
         with:

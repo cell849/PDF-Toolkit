@@ -48,6 +48,23 @@ def test_office_inspection_counts_without_values(tmp_path):
     assert json.loads(report.read_text())["inspection"][0]["fields_detected"] > 0
 
 
+def test_heic_inspection_uses_the_registered_format(tmp_path):
+    from local_pdf_toolkit.converters.images import FORMATS
+    from local_pdf_toolkit.core.formats import FileFormat
+
+    if "HEIF" not in FORMATS:
+        pytest.skip("Optional HEIC codec is unavailable")
+    source = tmp_path / "private.heic"
+    exif = Image.Exif()
+    exif[315] = "PrivateOwner"
+    Image.new("RGB", (20, 30), "red").save(source, format="HEIF", exif=exif)
+    assert MetadataInspector().validate_input(source) == FileFormat.HEIC
+    (report,) = run(MetadataInspector(), source, tmp_path)
+    details = json.loads(report.read_text())["inspection"][0]
+    assert details["format"] == "HEIC" and details["fields_detected"] > 0
+    assert "Private" not in report.read_text()
+
+
 def test_pdf_previews_are_paged_bounded_and_preserve_source(tmp_path):
     source = tmp_path / "source.pdf"
     with pymupdf.open() as doc:

@@ -1,0 +1,79 @@
+{
+  "python": "3.13.5",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "packages": {
+    "Pillow": "11.3.0",
+    "PyMuPDF": "1.26.7",
+    "psutil": "7.0.0"
+  },
+  "fixture": "synthetic 4096x4096 RGB BMP (48 MiB uncompressed)",
+  "sampling_ms": 5,
+  "notes": [
+    "Three fresh subprocess samples per operation; no discarded warmup.",
+    "Elapsed operation time excludes interpreter/import startup; RSS includes imports.",
+    "RSS sampled every 5 ms; peaks may be missed. Warm caches are not flushed.",
+    "copy_only uses the same 1 MiB Python loop without validation/publication.",
+    "probe copies into one snapshot before parsing; rename copies then probe snapshots again.",
+    "Diagnostic comparison on one synthetic input; no optimization claim."
+  ],
+  "input_bytes": 50331702,
+  "input_sha256": "b6ac8f1acc1071fdf25c5c24ffe8433207726f5a3d1c3e36ec1b749486cbca3a",
+  "samples": {
+    "copy_only": [
+      {
+        "operation_seconds": 0.012699596998572815,
+        "peak_rss_mib_sampled": 60.83203125
+      },
+      {
+        "operation_seconds": 0.09153911499743117,
+        "peak_rss_mib_sampled": 61.47265625
+      },
+      {
+        "operation_seconds": 0.013979341994854622,
+        "peak_rss_mib_sampled": 61.296875
+      }
+    ],
+    "probe": [
+      {
+        "operation_seconds": 0.09104416699847206,
+        "peak_rss_mib_sampled": 177.92578125
+      },
+      {
+        "operation_seconds": 0.07463378000102239,
+        "peak_rss_mib_sampled": 189.1015625
+      },
+      {
+        "operation_seconds": 0.07254541300062556,
+        "peak_rss_mib_sampled": 188.1796875
+      }
+    ],
+    "rename": [
+      {
+        "operation_seconds": 0.08619118099886691,
+        "peak_rss_mib_sampled": 179.90234375
+      },
+      {
+        "operation_seconds": 0.08421976100362372,
+        "peak_rss_mib_sampled": 179.37109375
+      },
+      {
+        "operation_seconds": 0.08286285000212956,
+        "peak_rss_mib_sampled": 185.90234375
+      }
+    ]
+  },
+  "medians": {
+    "copy_only": {
+      "operation_seconds": 0.013979341994854622,
+      "peak_rss_mib_sampled": 61.296875
+    },
+    "probe": {
+      "operation_seconds": 0.07463378000102239,
+      "peak_rss_mib_sampled": 188.1796875
+    },
+    "rename": {
+      "operation_seconds": 0.08421976100362372,
+      "peak_rss_mib_sampled": 179.90234375
+    }
+  }
+}

@@ -1,11 +1,13 @@
 """Real document fixtures plus local subprocess and failure-path checks."""
 
+import os
 import subprocess
 import sys
 import threading
 import time
 import zipfile
 from pathlib import Path
+from types import SimpleNamespace
 
 import docx
 import openpyxl
@@ -248,6 +250,84 @@ def test_subprocess_timeout_reaps_child():
             [sys.executable, "-c", "import time; time.sleep(30)"], 0.1, CancellationToken()
         )
     assert time.monotonic() - started < 5
+
+
+@pytest.mark.parametrize(
+    "cleanup_error", [OSError("taskkill missing"), subprocess.TimeoutExpired("taskkill", 5)]
+)
+def test_windows_taskkill_failure_still_reaps_office_process(monkeypatch, cleanup_error):
+    class Process:
+        pid = 123
+        killed = False
+        reaped = False
+
+        def poll(self):
+            return 1 if self.killed else None
+
+        def wait(self, timeout=None):
+            if not self.killed:
+                raise subprocess.TimeoutExpired("office", timeout)
+            self.reaped = True
+            return 1
+
+        def kill(self):
+            self.killed = True
+
+    process = Process()
+
+    def failed_taskkill(*args, **kwargs):
+        raise cleanup_error
+
+    monkeypatch.setattr(office_pdf, "os", SimpleNamespace(name="nt"))
+    monkeypatch.setattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 512, raising=False)
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr(subprocess, "run", failed_taskkill)
+    token = CancellationToken()
+    token.cancel()
+    with pytest.raises(ConversionCancelled):
+        office_pdf._run(["office"], 5, token)
+    assert process.killed and process.reaped
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX process group assertion")
+@pytest.mark.parametrize("exit_code", [0, 1])
+def test_exited_office_supervisor_does_not_leave_descendants(tmp_path, exit_code):
+    psutil = pytest.importorskip("psutil")
+    pidfile = tmp_path / "child.pid"
+    code = (
+        "import pathlib,subprocess,sys; "
+        "p=subprocess.Popen([sys.executable,'-c','import time; time.sleep(30)']); "
+        "pathlib.Path(sys.argv[1]).write_text(str(p.pid)); sys.exit(int(sys.argv[2]))"
+    )
+    child = None
+    try:
+        if exit_code:
+            with pytest.raises(ConversionError, match="conversion failed"):
+                office_pdf._run(
+                    [sys.executable, "-c", code, str(pidfile), str(exit_code)],
+                    5,
+                    CancellationToken(),
+                )
+        else:
+            office_pdf._run(
+                [sys.executable, "-c", code, str(pidfile), str(exit_code)],
+                5,
+                CancellationToken(),
+            )
+        child = psutil.Process(int(pidfile.read_text()))
+        # A terminated orphan can remain a zombie until the container's init reaps it.
+        deadline = time.monotonic() + 2
+        while child.is_running() and child.status() != psutil.STATUS_ZOMBIE:
+            assert time.monotonic() < deadline, "Office descendant remains running"
+            time.sleep(0.02)
+    except psutil.NoSuchProcess:
+        pass
+    finally:
+        if child is not None:
+            try:
+                child.kill()
+            except psutil.NoSuchProcess:
+                pass
 
 
 def test_mocked_office_conversion_uses_profile_and_safe_transaction(tmp_path, monkeypatch):

@@ -207,7 +207,7 @@ def _inventory(path, token):
     else:
         try:
             with open_image_bytes(path.read_bytes()) as image:
-                kind = image.format
+                kind = FORMATS[image.format].value.upper()
                 add_image_fields(image, add)
         except (OSError, ValueError) as exc:
             raise ConversionError(

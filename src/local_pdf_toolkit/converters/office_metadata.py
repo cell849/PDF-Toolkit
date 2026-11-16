@@ -285,9 +285,11 @@ def clean_ooxml(parts, kind, token, progress):
                 or local in ("cellDel", "cellIns", "cellMerge")
             ):
                 reject("Accept table-structure revisions in Word before cleaning this document.")
+            if ns == W and local in ("documentProtection", "writeProtection"):
+                reject("Protected Word documents must be unprotected before cleaning.")
             if (
                 ns == W
-                and local == "vanish"
+                and local in ("vanish", "webHidden")
                 and element.get("{" + W + "}val", "1") not in ("0", "false")
             ):
                 reject("Hidden Word text must be reviewed or removed before cleaning.")

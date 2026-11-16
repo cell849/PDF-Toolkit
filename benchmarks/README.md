@@ -50,3 +50,16 @@ replace interactive Windows testing or prove absence of every memory leak.
 `benchmark_pdf_images.py` and `baseline-linux.json` are the original two-sample
 benchmark. Their less dense input and measurement scheme differ; do not compare
 their absolute times with the newer suite.
+
+For a focused batch-copy/parsing diagnostic, run:
+
+```sh
+python benchmarks/benchmark_file_tools.py benchmarks/v08-file-tools-linux.json
+```
+
+This compares a 1 MiB chunk copy, file inspection and batch rename copies on one
+synthetic 4096×4096 RGB BMP (48 MiB). Three fresh subprocesses run each operation.
+Operation time excludes startup/imports; sampled RSS includes them. Inspection
+copies a snapshot before parsing, and batch rename first stages its own copy.
+This identifies copy versus decoding costs on that fixture; it does not establish
+performance for compressed images, PDFs, Office files or slower output devices.
