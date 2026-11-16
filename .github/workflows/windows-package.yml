@@ -6,6 +6,14 @@ on:
         description: Optional new release tag (e.g. v0.2.1)
         required: false
         type: string
+      signing_mode:
+        description: Signing mode (self-signed remains an untrusted publisher)
+        required: true
+        default: unsigned
+        type: choice
+        options:
+          - unsigned
+          - self-signed
 permissions:
   contents: write
 jobs:
@@ -49,7 +57,34 @@ jobs:
       - shell: pwsh
         env:
           QT_QPA_PLATFORM: windows
-        run: ./packaging/build_windows.ps1
+          SIGNING_MODE: ${{ inputs.signing_mode || 'unsigned' }}
+        run: |
+          ./packaging/build_windows.ps1 -SigningMode $env:SIGNING_MODE -EphemeralSelfSignedCertificate:($env:SIGNING_MODE -eq 'self-signed')
+      - name: Reject a tampered self-signed executable
+        if: inputs.signing_mode == 'self-signed'
+        shell: pwsh
+        run: |
+          $app = 'dist/LocalPDFToolkit/LocalPDFToolkit.exe'
+          $tampered = Join-Path $env:RUNNER_TEMP 'LocalPDFToolkit-tampered.exe'
+          try {
+            $bytes = [IO.File]::ReadAllBytes((Resolve-Path $app))
+            $pe = [BitConverter]::ToInt32($bytes, 60)
+            $section = $pe + 24 + [BitConverter]::ToUInt16($bytes, $pe + 20)
+            $rawData = [BitConverter]::ToUInt32($bytes, $section + 20)
+            $bytes[$rawData] = $bytes[$rawData] -bxor 1
+            [IO.File]::WriteAllBytes($tampered, $bytes)
+            $rejected = $false
+            try {
+              ./packaging/verify_windows_signature.ps1 -AppPath $tampered -CertificatePath dist/LocalPDFToolkit/LocalPDFToolkit-signing.cer
+            } catch {
+              if ($_.Exception.Message -notmatch '0x80096010') { throw }
+              $rejected = $true
+            }
+            if (-not $rejected) { throw 'Signature verification accepted a modified executable.' }
+            Write-Output 'Tampered executable correctly rejected with TRUST_E_BAD_DIGEST.'
+          } finally {
+            Remove-Item -LiteralPath $tampered -Force -ErrorAction SilentlyContinue
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: LocalPDFToolkit-Windows-x64

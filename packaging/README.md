@@ -35,8 +35,9 @@ Extract the entire archive; keep `_internal` beside the executable. Launch
 `LocalPDFToolkit.exe`. Python is bundled; LibreOffice is not. For Office → PDF,
 install LibreOffice locally; other supported tools operate without it.
 
-The archive is a portable folder, not an MSI/installer, signed binary or update
-service. There are no automatic downloads, telemetry or cloud APIs.
+The archive is a portable folder, not an MSI/installer or update service.
+Signing is optional as described below. There are no automatic downloads,
+telemetry or cloud APIs.
 
 Clean Windows 11 verification still required:
 
@@ -68,24 +69,68 @@ To publish a new private release, manually run Windows package with a new
 `release_tag` such as `v0.2.1`. A release is created only after tests, packaging
 and the frozen-worker smoke check pass; existing releases are not overwritten.
 
-## v0.7.0 identity and signing
+## Identity and signing
 
 The build embeds the original app ICO and product/version resources and includes
 SVG/ICO/PNG UI artwork. Its self-test renders the real workspace, verifies bundled
 artwork and performs a spawned conversion. A ZIP SHA-256 checksum is generated.
 
-No trusted signing identity was provided. The package is unsigned; SmartScreen
-or Smart App Control may warn/block according to the machine's policy. Neither
-an app icon, version metadata, a self-signed certificate nor a checksum establishes
-trusted publisher identity. Do not disable Windows protections as a build step.
+Choose `signing_mode: self-signed` when manually running `Windows package` to
+produce a self-signed app. Leave `release_tag` empty to build a downloadable
+Actions artifact without publishing a release. The workflow default remains
+`unsigned`; signed and unsigned builds both run the frozen-worker self-test.
+Self-signed signing checks the executable's integrity but does not establish a
+trusted publisher. Windows SmartScreen or Smart App Control can still warn or
+block it according to machine policy. Do not disable Windows protections.
 
-For a future already-provisioned trusted Windows certificate, place SignTool on
-PATH and pass `-SigningThumbprint <certificate-thumbprint>` to build_windows.ps1
-(or set WINDOWS_SIGNING_THUMBPRINT). The script signs using SHA-256, requests an
-RFC3161 timestamp, verifies Authenticode trust and only then creates the ZIP. A
-requested but failed/untrusted signature stops the build. It never creates a
-certificate, purchases a service or logs a private key. Hosted runners need their
-own approved signing provisioning; this optional hook alone does not install it.
-Signing can improve publisher identification but does not guarantee immediate
-SmartScreen reputation. See Microsoft's current guidance:
+For a local Windows build with the Windows SDK installed:
+
+```powershell
+powershell -NoProfile -File packaging/build_windows.ps1 -SigningMode self-signed
+```
+
+SignTool is discovered on PATH or in the installed Windows SDK's versioned x64
+directory. Self-signed mode creates an RSA-3072/SHA-256 code-signing certificate
+in `Cert:\CurrentUser\My` with a non-exportable private key and three-year
+validity. Later local builds reuse this certificate until it approaches expiry.
+To choose an existing self-signed identity, also pass `-SigningThumbprint`.
+The public certificate goes in the ZIP; the private key stays in the Windows
+certificate store and is never exported or uploaded. No certificate is added to
+Trusted Root or Trusted Publishers.
+
+Hosted Actions builds use `-EphemeralSelfSignedCertificate`: a fresh identity is
+created for each run, then its certificate and private key are removed in a
+`finally` block. These builds have different certificate fingerprints across runs
+and do not provide a persistent publisher identity. No signing secret is required.
+Self-signed signatures are not timestamped; they expire with their certificate.
+
+Every signed ZIP includes `LocalPDFToolkit-signing.cer`, `SIGNATURE.txt` (public
+certificate SHA-256 fingerprint and SHA-1 thumbprint identifier), and
+`Verify-Signature.ps1`. Inspect the script, then from the extracted app folder run:
+
+```powershell
+powershell -NoProfile -File .\Verify-Signature.ps1
+Get-FileHash .\LocalPDFToolkit-signing.cer -Algorithm SHA256
+```
+
+The verifier checks the PKCS#7 signature cryptographically, matches the signer to
+the public certificate and uses Windows Authenticode to verify the executable's
+digest. Self-signed mode permits Windows' untrusted-root result, while rejecting
+other errors such as a changed executable. It makes no network requests and
+does not install certificates. The workflow additionally modifies a copy of the
+signed EXE and requires verification to reject it with `TRUST_E_BAD_DIGEST`.
+Compare certificate fingerprints against a separately trusted source if publisher
+identity matters; a certificate and fingerprint supplied in the same ZIP do not
+authenticate its producer. The ZIP's `.sha256` file checks download integrity.
+
+For an already-provisioned trusted Windows certificate in `CurrentUser\My`, pass
+`-SigningMode trusted -SigningThumbprint <certificate-thumbprint>` (passing only
+`-SigningThumbprint`, or setting `WINDOWS_SIGNING_THUMBPRINT`, retains the existing
+trusted-signing behavior). This mode uses SHA-256, requests an RFC3161 timestamp,
+and requires trusted Authenticode verification before packaging. Its bundled
+verifier needs `-SigningMode trusted`; receiving-machine trust policy can differ.
+A requested but failed signature stops the build. Hosted runners need separate
+approved provisioning for a trusted identity; the dispatch choices do not
+provision one. Signing does not guarantee immediate SmartScreen reputation.
+See Microsoft's current guidance:
 https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation

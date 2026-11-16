@@ -1,5 +1,14 @@
-param([string]$SigningThumbprint = $env:WINDOWS_SIGNING_THUMBPRINT)
+param(
+    [string]$SigningThumbprint = $env:WINDOWS_SIGNING_THUMBPRINT,
+    [ValidateSet('unsigned', 'self-signed', 'trusted')]
+    [string]$SigningMode = $(if ($env:WINDOWS_SIGNING_THUMBPRINT) { 'trusted' } else { 'unsigned' }),
+    [switch]$EphemeralSelfSignedCertificate
+)
 $ErrorActionPreference = 'Stop'
+if (-not $PSBoundParameters.ContainsKey('SigningMode') -and $SigningThumbprint) { $SigningMode = 'trusted' }
+if ($SigningMode -eq 'unsigned' -and ($SigningThumbprint -or $EphemeralSelfSignedCertificate)) {
+    throw 'Unsigned mode cannot use a signing certificate.'
+}
 $projectRoot = Split-Path $PSScriptRoot -Parent
 Push-Location $projectRoot
 try {
@@ -18,14 +27,9 @@ try {
         --add-data 'CAPABILITIES.md:.' --add-data 'packaging/THIRD_PARTY.md:.' packaging/launcher.py
     if ($LASTEXITCODE -ne 0) { throw 'PyInstaller build failed.' }
     $app = Join-Path $projectRoot 'dist\LocalPDFToolkit\LocalPDFToolkit.exe'
-    if ($SigningThumbprint) {
-        $tool = Get-Command signtool.exe -ErrorAction SilentlyContinue
-        if (-not $tool) { throw 'Signing requested but SignTool is not available on PATH.' }
-        & $tool.Source sign /sha1 $SigningThumbprint /fd SHA256 /tr https://timestamp.digicert.com /td SHA256 $app
-        if ($LASTEXITCODE -ne 0) { throw 'Authenticode signing failed.' }
-        & $tool.Source verify /pa /all $app
-        if ($LASTEXITCODE -ne 0) { throw 'Signature verification failed.' }
-        if ((Get-AuthenticodeSignature $app).Status -ne 'Valid') { throw 'A trusted signature is required.' }
+    if ($SigningMode -ne 'unsigned') {
+        & (Join-Path $PSScriptRoot 'sign_windows.ps1') -AppPath $app -SigningMode $SigningMode `
+            -SigningThumbprint $SigningThumbprint -EphemeralSelfSignedCertificate:$EphemeralSelfSignedCertificate
     } else {
         Write-Output 'No signing identity configured. SmartScreen may warn about this unsigned app.'
     }

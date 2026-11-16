@@ -354,3 +354,57 @@ def test_file_icons_do_not_retain_full_resolution_preview_rasters(workspace, tmp
     workspace._thumbnail_ready(pixmap)
     sizes = workspace.files.currentItem().icon().availableSizes()
     assert sizes and all(size.width() <= 64 and size.height() <= 64 for size in sizes)
+
+
+def test_compression_controls_follow_mode_and_target(workspace):
+    choose(workspace, "pdf.compress")
+    dpi, caption = workspace._option_rows["dpi"]
+    downscale, _ = workspace._option_rows["allow_downscale"]
+    assert dpi.isHidden() and caption.isHidden() and downscale.isHidden()
+    mode = workspace._option_rows["mode"][0]
+    mode.setCurrentIndex(mode.findData("rasterized"))
+    assert not dpi.isHidden() and downscale.isHidden()
+    workspace._option_rows["target_value"][0].amount.setValue(2.5)
+    assert not downscale.isHidden()
+    mode.setCurrentIndex(mode.findData("lossless"))
+    assert dpi.isHidden() and downscale.isHidden()
+    # A lossless target remains useful and must remain editable.
+    assert not workspace._option_rows["target_value"][0].isHidden()
+
+
+def test_saved_summary_uses_run_settings_and_excludes_sidecars(workspace, fixture_dir, tmp_path):
+    choose(workspace, "pdf.compress")
+    source = tmp_path / "input.pdf"
+    source.write_bytes((fixture_dir / "one_page.pdf").read_bytes())
+    workspace.add_paths((source,))
+    inspected(workspace)
+    output = tmp_path / "small.pdf"
+    output.write_bytes(b"x" * 100)
+    report = tmp_path / "report.json"
+    report.write_bytes(b"x" * 5000)
+    workspace._results = {0: (output, report)}
+    workspace._result_settings[(workspace._tool_id, source)] = {"mode": "rasterized"}
+    text = workspace._saved_summary(0)
+    assert "100 B" in text and "smaller" in text
+    assert "selectable text, links and forms removed" in text
+    assert "5.00 KB" not in text
+    output.unlink()
+    assert "no longer available" in workspace._saved_summary(0)
+
+
+def test_inspection_heading_counts_pending_files_and_cache_is_reused(
+    workspace, fixture_dir, tmp_path
+):
+    choose(workspace, "pdf.to_png")
+    paths = copies(fixture_dir, tmp_path)
+    workspace.add_paths(paths)
+    assert "of 2 inspected" in workspace.file_heading.text()
+    inspected(workspace)
+    assert workspace.file_heading.text() == "Files · 2"
+    workspace._queue_inspection(paths[0])
+    assert not workspace._probe_queue and not workspace._probe_jobs.running
+    paths[0].write_bytes(b"changed")
+    workspace._queue_inspection(paths[0])
+    assert workspace._probe_jobs.running
+    inspected(workspace)
+    assert workspace._file_ready(paths[0])[0] is False

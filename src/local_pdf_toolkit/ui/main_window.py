@@ -228,6 +228,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         while self.form.rowCount():
             self.form.removeRow(0)
         self._editors = {}
+        self._option_rows = {}
         self.start_button.setEnabled(index >= 0 and not self._active)
         if index < 0:
             self.notice.clear()
@@ -397,6 +398,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                 target_form.rowCount() - 1, target_form.ItemRole.LabelRole
             ).widget()
             label.setWordWrap(True)
+            self._option_rows[option.name] = (widget, label)
             for child in [
                 widget,
                 *widget.findChildren(QLineEdit),
@@ -490,7 +492,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
             button.setVisible(bool(spec and spec.input_mode == "multiple" and len(self._paths) > 1))
         self.retry_button.setVisible(bool(self._failed) and not self._active)
         self.cancel_selected.setVisible(self._active and bool(self._paths))
-        self.file_heading.setText(f"Files · {len(self._paths)}" if self._paths else "Files")
+        self._inspection_progress()
         self._sync_comparison()
         self._update_summary()
 

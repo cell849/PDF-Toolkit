@@ -68,13 +68,20 @@ def test_library_cards_categories_and_compact_workspace(qapp):
         QTest.qWait(80)
         window.settings_action.setChecked(True)
         QTest.qWait(50)
-        previous_bottom = -1
-        for row in range(window.form.rowCount()):
-            label = window.form.itemAt(row, window.form.ItemRole.LabelRole).widget()
-            field = window.form.itemAt(row, window.form.ItemRole.FieldRole).widget()
-            assert label.geometry().top() > previous_bottom
-            assert field.geometry().top() > label.geometry().bottom()
-            previous_bottom = field.geometry().bottom()
+        for mode in ("lossless", "rasterized"):
+            choice = window._option_rows["mode"][0]
+            choice.setCurrentIndex(choice.findData(mode))
+            QTest.qWait(50)
+            previous_bottom = -1
+            for row in range(window.form.rowCount()):
+                label = window.form.itemAt(row, window.form.ItemRole.LabelRole).widget()
+                field = window.form.itemAt(row, window.form.ItemRole.FieldRole).widget()
+                if field.isHidden():
+                    assert label.isHidden()
+                    continue
+                assert label.geometry().top() > previous_bottom
+                assert field.geometry().top() > label.geometry().bottom()
+                previous_bottom = field.geometry().bottom()
         for scroll in window.workspace.findChildren(QScrollArea):
             oversized = [
                 (

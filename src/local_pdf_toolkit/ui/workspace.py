@@ -167,6 +167,7 @@ class WorkspaceBehavior:
 
         self._probe_path = self._probe_queue.pop(0)
         self._probe_signature = self._signature(self._probe_path)
+        self._inspection_progress()
         try:
             self._probe_jobs.start(
                 FileProbeConverter(), self._probe_path, Path(self._probe_temp.name), {"formats": ""}
@@ -199,6 +200,7 @@ class WorkspaceBehavior:
             info["signature"] = self._probe_signature
             self._records[path] = info
         self._probe_path = None
+        self._inspection_progress()
         if path in self._carryover:
             self._carryover.discard(path)
             ready, _ = self._file_ready(path)
@@ -250,6 +252,21 @@ class WorkspaceBehavior:
             self._resource_idle()
         else:
             self._next_inspection()
+
+    def _inspection_progress(self):
+        pending = set(getattr(self, "_probe_queue", ()))
+        active = getattr(self, "_probe_path", None)
+        if active is not None:
+            pending.add(active)
+        remaining = sum(path in pending for path in self._paths)
+        total = len(self._paths)
+        self.file_heading.setText(
+            f"Files · {total - remaining} of {total} inspected"
+            if remaining
+            else f"Files · {total}"
+            if total
+            else "Files"
+        )
 
     def _file_ready(self, path):
         spec = self._current_spec()
@@ -383,6 +400,8 @@ class WorkspaceBehavior:
                 else "Processing failed",
                 self._errors[index],
             )
+        if index in self._results and not self._active and not self._failed:
+            self.result_detail.setText(self._saved_summary(index))
         self._sync_comparison()
 
     def _thumbnail_ready(self, pixmap):
@@ -452,6 +471,8 @@ class WorkspaceBehavior:
                 (message for i, message in self._errors.items() if i not in self._cancelled),
                 "Adjust the settings or select another file.",
             )
+            if not saved:
+                detail += " No output saved."
             self._set_result(
                 "partial" if saved else "error",
                 f"{saved} saved · {failed} failed" if saved else "Processing failed",
@@ -464,20 +485,53 @@ class WorkspaceBehavior:
                 f"{saved} files saved. Remaining work was cancelled; temporary outputs cleaned up.",
             )
         elif saved:
-            source_bytes = sum(
-                (self._records.get(path, {}).get("bytes") or 0) for path in self._paths
-            )
-            outputs = {
-                p for group in self._results.values() for p in group if p.suffix.lower() != ".json"
-            }
-            size = sum(p.stat().st_size for p in outputs if p.is_file())
-            self._set_result(
-                "success",
-                "Saved successfully",
-                f"{saved} files processed · {source_bytes:,} → {size:,} bytes. "
-                "Originals unchanged.",
-            )
+            self._set_result("success", "Saved successfully", self._saved_summary())
         self._selection_changed()
+
+    @staticmethod
+    def _display_bytes(size):
+        for unit in ("B", "KB", "MB", "GB"):
+            if size < 1000 or unit == "GB":
+                return f"{size:,.0f} B" if unit == "B" else f"{size:,.2f} {unit}"
+            size /= 1000
+
+    def _saved_summary(self, selected=None):
+        indices = [selected] if selected is not None else list(self._results)
+        sources = set()
+        outputs = set()
+        configs = []
+        spec = self._current_spec()
+        for index in indices:
+            if index not in self._results or not 0 <= index < len(self._paths):
+                continue
+            source = self._paths[index]
+            sources.add(source)
+            outputs.update(self._results[index])
+            configs.append(self._result_settings.get((self._tool_id, source), {}))
+        if spec and spec.input_mode == "multiple" and self._tool_id != "file.rename_copies":
+            sources = set(self._paths)
+        # Sidecar reports are excluded from conversion size comparisons; report-only
+        # tools report their saved report size instead of pretending to compress inputs.
+        documents = {p for p in outputs if p.suffix.lower() != ".json"}
+        try:
+            output_size = sum(p.stat().st_size for p in (documents or outputs))
+        except OSError:
+            return "Saved output is no longer available."
+        if not documents:
+            return f"Report saved · {self._display_bytes(output_size)}. Original files unchanged."
+        sizes = [self._records.get(p, {}).get("bytes") for p in sources]
+        before = sum(sizes) if sizes and all(isinstance(n, int) and n > 0 for n in sizes) else 0
+        text = f"Saved · {self._display_bytes(output_size)}"
+        if before:
+            delta = (before - output_size) / before * 100
+            change = f"{abs(delta):.1f}% {'smaller' if delta >= 0 else 'larger'}"
+            text += f" · Original {self._display_bytes(before)} · {change}"
+        if self._tool_id == "pdf.compress" and any(c.get("mode") == "rasterized" for c in configs):
+            text += "\nPages converted to images; selectable text, links and forms removed."
+        elif self._tool_id == "file.rename_copies":
+            text += "\nByte-identical copies; metadata retained."
+        text += "\nOriginal files unchanged."
+        return text
 
     def _current_values(self):
         values = {key: get() for key, get in self._editors.items()}
@@ -567,7 +621,7 @@ class WorkspaceBehavior:
                 width = math.ceil(info["width"] * values["dpi"] / 72)
                 height = math.ceil(info["height"] * values["dpi"] / 72)
                 parts.append(f"Selected page: {width:,} × {height:,} px")
-        if values.get("quality"):
+        if values.get("quality") and values.get("mode") != "lossless":
             parts.append(f"Quality {values['quality']}")
         amount = values.get("target_value", 0)
         if amount:
@@ -580,7 +634,7 @@ class WorkspaceBehavior:
             if unit == "percent" and self._paths:
                 total = sum((self._records.get(path, {}).get("bytes") or 0) for path in self._paths)
                 parts.append(f"Target total ≤ {int(total * amount / 100):,} bytes")
-        if "allow_downscale" in values and values.get("mode") != "lossless":
+        if amount and "allow_downscale" in values and values.get("mode") != "lossless":
             parts.append(
                 "May reduce resolution" if values["allow_downscale"] else "Preserve resolution"
             )
@@ -592,10 +646,18 @@ class WorkspaceBehavior:
                 if lossless
                 else "Page images — selectable text and interactivity removed",
             )
-            for key in ("dpi", "allow_downscale"):
-                editor = getattr(self._editors.get(key), "__self__", None)
-                if editor is not None:
-                    editor.setEnabled(not lossless)
+        for key, (editor, caption) in self._option_rows.items():
+            visible = not (
+                (
+                    spec
+                    and spec.operation_id == "pdf.compress"
+                    and values.get("mode") == "lossless"
+                    and key in ("dpi", "quality")
+                )
+                or (key == "allow_downscale" and (not amount or values.get("mode") == "lossless"))
+            )
+            editor.setVisible(visible)
+            caption.setVisible(visible)
         if spec and spec.operation_id == "metadata.inspect":
             parts.insert(0, "Inspect one file, or compare original then cleaned copy")
         elif rename:
