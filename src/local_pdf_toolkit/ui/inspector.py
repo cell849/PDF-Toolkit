@@ -58,6 +58,7 @@ class OptionLabel(QLabel):
 
     def minimumSizeHint(self):
         size = super().minimumSizeHint()
+        size.setWidth(0)
         if hasattr(self, "help"):
             size.setHeight(max(size.height(), self.help.sizeHint().height()))
         return size
@@ -103,6 +104,11 @@ class InlineCheckOption(QWidget):
             self.row.setDirection(direction)
             self.updateGeometry()
 
+    def minimumSizeHint(self):
+        size = super().minimumSizeHint()
+        size.setWidth(0)
+        return size
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.prepare_layout(self.width())
@@ -139,8 +145,6 @@ class FormBody(QWidget):
                     if hasattr(field, "prepare_layout"):
                         field.prepare_layout(width)
                     if isinstance(field, OptionLabel):
-                        # QFormLayout can otherwise allocate a wrapped label its
-                        # unconstrained size hint, beyond the actual form width.
                         field.setMaximumWidth(width)
                     height = max(field.sizeHint().height(), field.minimumSizeHint().height())
                     if field.hasHeightForWidth():

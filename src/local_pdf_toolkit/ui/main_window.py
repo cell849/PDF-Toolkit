@@ -311,11 +311,19 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         self._switch_document_context(index)
         for section in (self.options_section, self.advanced_section, self.output_section):
             section.close()
-        if hasattr(self, "advanced_form"):
-            while self.advanced_form.rowCount():
-                self.advanced_form.removeRow(0)
-        while self.form.rowCount():
-            self.form.removeRow(0)
+        bodies = (self.options_section.body, self.advanced_section.body)
+        for body in bodies:
+            body._measure_timer.stop()
+            body._measuring = True
+        try:
+            if hasattr(self, "advanced_form"):
+                while self.advanced_form.rowCount():
+                    self.advanced_form.removeRow(0)
+            while self.form.rowCount():
+                self.form.removeRow(0)
+        finally:
+            for body in bodies:
+                body._measuring = False
         self._editors = {}
         self._option_rows = {}
         self.start_button.setEnabled(index >= 0 and not self._active)
