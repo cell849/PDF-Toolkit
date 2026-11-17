@@ -122,6 +122,10 @@ class FormBody(QWidget):
             if height < 0:
                 height = self.form.totalSizeHint().height()
             self.setMinimumHeight(height)
+            # Windows can retain the old row positions after the labels gain
+            # a larger minimum height. Recalculate before showing the section.
+            self.form.activate()
+            self.updateGeometry()
         finally:
             self._measuring = False
 
