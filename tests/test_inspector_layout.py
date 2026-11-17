@@ -44,7 +44,9 @@ def test_disclosure_moves_following_section_and_tracks_width(qapp):
         dpi.number.setValue(276)
         assert window._editors["dpi"]() == 276
         old_width = section.width()
-        window.workspace_splitter.setSizes([180, 350, 600])
+        # Request a real width change; splitter ratios can be constrained by
+        # the Windows runner's physical display at 150% scale.
+        window.settings_scroll.setFixedWidth(old_width + 180)
         settle(qapp)
         assert section.width() > old_width
         assert section.popup.width() == section.width()
