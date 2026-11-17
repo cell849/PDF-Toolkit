@@ -428,7 +428,7 @@ def build_window(w):
     # increase the row rather than clipping a fixed-height control.
     for control in (w.back_button, w.settings_toggle, w.search):
         policy = control.sizePolicy()
-        policy.setVerticalPolicy(QSizePolicy.Policy.Preferred)
+        policy.setVerticalPolicy(QSizePolicy.Policy.Minimum)
         control.setSizePolicy(policy)
         control.setMinimumHeight(36)
     outer.addLayout(bar)
