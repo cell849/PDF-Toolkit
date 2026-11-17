@@ -598,7 +598,8 @@ def build_window(w):
     # On very small windows or with enlarged text, keep every section reachable.
     w.settings_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
     w.settings_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-    w.settings_scroll.setMinimumWidth(190)
+    # Leave room for option captions, their help buttons, and the scrollbar.
+    w.settings_scroll.setMinimumWidth(252)
     w.workspace_splitter.addWidget(w.settings_scroll)
     w.workspace_splitter.setStretchFactor(0, 0)
     w.workspace_splitter.setStretchFactor(1, 1)

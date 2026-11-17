@@ -316,11 +316,14 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
             body._measure_timer.stop()
             body._measuring = True
         try:
-            if hasattr(self, "advanced_form"):
-                while self.advanced_form.rowCount():
-                    self.advanced_form.removeRow(0)
-            while self.form.rowCount():
-                self.form.removeRow(0)
+            for form in (self.advanced_form, self.form):
+                while form.rowCount():
+                    row = form.takeRow(0)
+                    for item in (row.labelItem, row.fieldItem):
+                        widget = item.widget() if item else None
+                        if widget:
+                            widget.hide()
+                            widget.deleteLater()
         finally:
             for body in bodies:
                 body._measuring = False
