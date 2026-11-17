@@ -424,6 +424,13 @@ def build_window(w):
     w.search.setClearButtonEnabled(True)
     w.search.setMaximumWidth(330)
     bar.addWidget(w.search, 1)
+    # Give the toolbar controls the same height, while allowing larger text to
+    # increase the row rather than clipping a fixed-height control.
+    for control in (w.back_button, w.settings_toggle, w.search):
+        policy = control.sizePolicy()
+        policy.setVerticalPolicy(QSizePolicy.Policy.Preferred)
+        control.setSizePolicy(policy)
+        control.setMinimumHeight(36)
     outer.addLayout(bar)
     w.pages = QStackedWidget()
     outer.addWidget(w.pages, 1)

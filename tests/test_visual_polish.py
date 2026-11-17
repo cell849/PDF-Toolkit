@@ -21,6 +21,24 @@ def close_widget(widget, app):
     settle(app)
 
 
+def test_toolbar_controls_share_height_with_enlarged_text(qapp):
+    window = MainWindow(build_registry())
+    window.resize(1380, 860)
+    window.show()
+    try:
+        window._select_tool(0)
+        for scale in (100, 150, 200):
+            window._set_text_size(scale)
+            settle(qapp)
+            controls = (window.back_button, window.settings_toggle, window.search)
+            assert all(control.isVisible() for control in controls)
+            assert len({(control.y(), control.height()) for control in controls}) == 1
+            assert all(control.height() >= control.sizeHint().height() for control in controls)
+    finally:
+        window._set_text_size(100)
+        close_widget(window, qapp)
+
+
 def test_all_categories_align_card_text_when_it_fits(qapp):
     window = MainWindow(build_registry())
     window.resize(1380, 860)
