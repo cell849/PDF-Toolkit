@@ -77,7 +77,8 @@ def test_all_tool_dropdowns_fit_fields_and_keep_values(qapp, dark, width, scale)
                 target.unit.setCurrentIndex(target.unit.findData("percent"))
                 target.amount.setValue(60)
             original = {name: getter() for name, getter in window._editors.items()}
-            assert window.settings_scroll.verticalScrollBar().maximum() == 0
+            settle(qapp)
+            assert window.settings_scroll.verticalScrollBar().maximum() == 0, spec.operation_id
             for section in (window.options_section, window.advanced_section):
                 if section.isHidden() or not section.button.isEnabled():
                     continue
