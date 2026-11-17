@@ -70,10 +70,9 @@ def test_inspector_sections_stay_reachable_when_height_is_constrained(qapp):
         assert rail.verticalScrollBar().isVisible()
         rail.ensureWidgetVisible(window.output_section)
         settle(qapp)
-        bottom = window.output_section.mapTo(
-            rail.viewport(), window.output_section.rect().bottomLeft()
-        )
-        assert rail.viewport().rect().contains(bottom)
+        button = window.output_section.button
+        center = button.mapTo(rail.viewport(), button.rect().center())
+        assert rail.viewport().rect().contains(center)
     finally:
         window.close()
         window.deleteLater()
@@ -109,15 +108,17 @@ def test_all_tool_dropdowns_fit_fields_and_keep_values(qapp, dark, width, scale)
             scrollbar = rail.verticalScrollBar()
             if scale == 100:
                 assert scrollbar.maximum() == 0, spec.operation_id
+                assert rail.horizontalScrollBar().maximum() == 0, spec.operation_id
             elif scrollbar.maximum():
                 assert scrollbar.isVisible(), spec.operation_id
                 rail.ensureWidgetVisible(window.output_section)
                 settle(qapp)
-                bottom = window.output_section.mapTo(
-                    rail.viewport(), window.output_section.rect().bottomLeft()
-                )
-                assert rail.viewport().rect().contains(bottom), spec.operation_id
+                button = window.output_section.button
+                center = button.mapTo(rail.viewport(), button.rect().center())
+                assert rail.viewport().rect().contains(center), spec.operation_id
                 scrollbar.setValue(0)
+            if rail.horizontalScrollBar().maximum():
+                assert rail.horizontalScrollBar().isVisible(), spec.operation_id
             for section in (window.options_section, window.advanced_section):
                 if section.isHidden() or not section.button.isEnabled():
                     continue
