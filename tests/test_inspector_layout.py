@@ -227,6 +227,7 @@ def test_all_tool_dropdowns_fit_fields_and_keep_values(qapp, dark, width, scale)
                     assert field.geometry().top() > caption.geometry().bottom(), context
                     assert field.height() >= field.sizeHint().height(), context
                     assert caption.height() >= caption.heightForWidth(caption.width()), context
+                    assert section.body.rect().contains(caption.geometry()), context
                     assert section.body.rect().contains(field.geometry()), context
                     for choice in (
                         [field] if isinstance(field, QComboBox) else field.findChildren(QComboBox)

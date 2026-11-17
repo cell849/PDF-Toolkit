@@ -122,6 +122,10 @@ class FormBody(QWidget):
                         continue
                     if hasattr(field, "prepare_layout"):
                         field.prepare_layout(width)
+                    if isinstance(field, OptionLabel):
+                        # QFormLayout can otherwise allocate a wrapped label its
+                        # unconstrained size hint, beyond the actual form width.
+                        field.setMaximumWidth(width)
                     height = max(field.sizeHint().height(), field.minimumSizeHint().height())
                     if field.hasHeightForWidth():
                         height = max(height, field.heightForWidth(width))
