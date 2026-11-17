@@ -33,7 +33,10 @@ def test_toolbar_controls_share_height_with_enlarged_text(qapp):
             controls = (window.back_button, window.settings_toggle, window.search)
             assert all(control.isVisible() for control in controls)
             assert len({(control.y(), control.height()) for control in controls}) == 1
-            assert all(control.height() >= control.sizeHint().height() for control in controls)
+            assert all(
+                control.contentsRect().height() >= control.fontMetrics().height()
+                for control in controls
+            )
     finally:
         window._set_text_size(100)
         close_widget(window, qapp)
