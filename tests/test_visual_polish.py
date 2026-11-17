@@ -90,7 +90,10 @@ def test_units_and_checkbox_stay_inline_when_space_is_available(qapp):
         settle(qapp)
         option, _ = window._option_rows["alpha"]
         assert isinstance(option, InlineCheckOption)
-        assert option.checkbox.geometry().center().y() == option.caption.geometry().center().y()
+        if option.row.direction() == option.row.Direction.LeftToRight:
+            assert option.checkbox.geometry().center().y() == option.caption.geometry().center().y()
+        else:
+            assert option.checkbox.geometry().bottom() < option.caption.geometry().top()
         assert not window._editors["alpha"]()
         QTest.mouseClick(option.checkbox, Qt.MouseButton.LeftButton)
         assert window._editors["alpha"]()
