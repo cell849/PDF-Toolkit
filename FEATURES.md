@@ -176,3 +176,14 @@ User authorized publication as 0.7.2 after verification.
 - Crash recovery: identify owned abandoned staging using per-job OS locks and
   bounded journals. Offer explicit cleanup; never delete originals or published
   outputs. Active jobs, PID reuse, symlinks and corrupt records fail safely.
+
+## Approved focused-workspace follow-up
+
+User selected simpler category-first home, synchronized comparison viewer, batch
+status filters, lean development checks, visual PDF organization and PDF comparison.
+Acceptance: all tools remain searchable/browsable; filters retain source/result
+indices; page plans are rendered in background and bound to reviewed source bytes;
+export preserves originals; PDF comparison highlights corresponding-page raster
+changes and reports bounded text changes without semantic/alignment guarantees.
+No new runtime dependencies. Source safety, cancellation and worker cleanup remain
+release gates; development runs use focused checks and quiet logs.

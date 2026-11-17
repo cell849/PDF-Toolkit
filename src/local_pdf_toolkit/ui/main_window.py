@@ -43,13 +43,32 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
 
         build_window(self)
         self._init_workspace()
+        self._show_library()
 
     def _show_library(self):
         if not self._active:
-            if self._ux_ready:
-                self._compatible_filter = None
-                self._filter_tools(self.search.text())
+            self._overview = True
+            self._category = "All tools"
+            self._compatible_filter = None
+            self.navigation.blockSignals(True)
+            self.navigation.setCurrentRow(0)
+            self.navigation.blockSignals(False)
+            self.search.blockSignals(True)
+            self.search.clear()
+            self.search.blockSignals(False)
+            self._filter_tools("")
             self.pages.setCurrentWidget(self.dashboard)
+
+    def _browse_tools(self, name="All tools"):
+        if self._active:
+            return
+        self._overview = False
+        self._category = name
+        from local_pdf_toolkit.ui.shell import CATEGORIES
+
+        self.navigation.setCurrentRow(CATEGORIES.index(name))
+        self._filter_tools(self.search.text())
+        self.pages.setCurrentWidget(self.dashboard)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -94,7 +113,10 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         if not 0 <= index < len(self._paths):
             return None, ()
         outputs = tuple(
-            path for path in self._results.get(index, ()) if path.suffix.lower() != ".json"
+            path
+            for path in self._results.get(index, ())
+            if path.suffix.lower() != ".json"
+            and not (self._tool_id == "pdf.compare" and path.suffix.lower() == ".txt")
         )
         return self._paths[index], outputs
 
@@ -216,6 +238,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
     def _category_changed(self, index):
         from local_pdf_toolkit.ui.shell import CATEGORIES
 
+        self._overview = False
         self._category = CATEGORIES[index] if index >= 0 else "All tools"
         self.pages.setCurrentWidget(self.dashboard)
         self._filter_tools(self.search.text())
@@ -260,6 +283,10 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                 "Inspect fonts, page sizes, encryption and attachments. "
                 "Open the report after saving."
             )
+        if spec.operation_id == "pdf.organize_visual":
+            self.tool_hint.setText("Arrange pages in the thumbnail grid, then save a new copy.")
+        if spec.operation_id == "pdf.compare":
+            self.tool_hint.setText("Add exactly two PDFs: original first, revised second.")
         if spec.operation_id == "image.compare_formats":
             self.tool_hint.setText(
                 "Create three same-size candidates, then use Compare to inspect each format."
@@ -274,6 +301,17 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                     "Inspect one file, or compare original then cleaned copy. Values stay masked."
                 )
         for option in spec.options:
+            if spec.operation_id == "pdf.organize_visual" and option.name == "plan":
+                if self._page_organizer is None:
+                    from local_pdf_toolkit.ui.page_organizer import PageOrganizerControl
+
+                    self._page_organizer = PageOrganizerControl(self)
+                    self.preview_host.layout().addWidget(self._page_organizer)
+                    self._page_organizer.changed.connect(self._settings_changed)
+                    self._page_organizer.sources_requested.connect(self.add_paths)
+                    self._page_organizer.idle.connect(self._resource_idle)
+                self._editors["plan"] = self._page_organizer.value
+                continue
             if option.name == "target_kib":
                 self._editors[option.name] = lambda: 0
                 continue
@@ -519,6 +557,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         self.retry_button.setVisible(bool(self._failed) and not self._active)
         self.cancel_selected.setVisible(self._active and bool(self._paths))
         self._inspection_progress()
+        self._apply_batch_filter()
         self._sync_comparison()
         self._update_summary()
 
@@ -528,8 +567,11 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         if self._ux_ready:
             self._remember_file_change()
         self._paths.clear()
+        self.batch_filter.setCurrentIndex(0)
         self.files.clear()
         self._failed.clear()
+        self._cancelled.clear()
+        self._errors.clear()
         self._results.clear()
         self.report_button.setEnabled(False)
         self._sync_files()
@@ -555,6 +597,8 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         self.progress.setVisible(active and self.pages.currentWidget() == self.workspace)
         if self._ux_ready:
             self.document_preview.set_busy(active)
+            if self._page_organizer is not None:
+                self._page_organizer.set_busy(active or self._tool_id != "pdf.organize_visual")
         for widget in (
             self.add_button,
             self.clear_button,
@@ -729,6 +773,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
             self.files.item(index).setText(message)
             self.files.item(index).setToolTip(message + "\n" + "\n".join(map(str, paths)))
         self.report_button.setEnabled(any(self._results.values()))
+        self._apply_batch_filter()
         self._sync_comparison()
         self._selection_changed()
         QTimer.singleShot(0, self._next)
@@ -755,6 +800,8 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
     def _filter_tools(self, text):
         from local_pdf_toolkit.ui.shell import category, matches_search
 
+        if text or self._category != "All tools" or getattr(self, "_compatible_filter", None):
+            self._overview = False
         visible = []
         for index, spec in enumerate(self._operations):
             compatible = not getattr(
@@ -782,7 +829,9 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                 if visible
                 else "No matching tools. Try another search or category."
             )
-            self.library_title.setText(self._category)
+            self.home_views.setCurrentIndex(0 if self._overview else 1)
+            self.library_count.setVisible(not self._overview)
+            self.library_title.setText("Choose a category" if self._overview else self._category)
         if text:
             self.pages.setCurrentWidget(self.dashboard)
 

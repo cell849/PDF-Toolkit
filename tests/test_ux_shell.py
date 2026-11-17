@@ -158,6 +158,7 @@ def test_library_cards_keep_all_text_visible_after_theme_and_text_changes(qapp, 
     window = MainWindow(build_registry())
     window.resize(width, 860)
     window.show()
+    window._browse_tools("All tools")
     try:
         for percent in (100, 200, 100):
             window._set_text_size(percent)

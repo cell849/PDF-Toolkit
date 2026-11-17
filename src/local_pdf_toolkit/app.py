@@ -21,6 +21,8 @@ def build_registry():
     from local_pdf_toolkit.converters.odf_metadata import OdfMetadataConverter
     from local_pdf_toolkit.converters.office_metadata import OfficeMetadataConverter
     from local_pdf_toolkit.converters.office_pdf import office_converters
+    from local_pdf_toolkit.converters.page_organizer import PdfPageOrganizerConverter
+    from local_pdf_toolkit.converters.pdf_compare import PdfComparisonConverter
     from local_pdf_toolkit.converters.pdf_metadata import PdfMetadataConverter
     from local_pdf_toolkit.converters.pdf_office import pdf_office_converters
     from local_pdf_toolkit.converters.pdf_tools import pdf_tool_converters
@@ -34,6 +36,7 @@ def build_registry():
     converters.extend(image_converters())
     converters.append(ImageComparisonConverter())
     converters.append(PdfNormalizePagesConverter())
+    converters.extend((PdfPageOrganizerConverter(), PdfComparisonConverter()))
     converters.extend(pdf_tool_converters())
     converters.append(PdfCompressConverter())
     converters.extend(office_converters())

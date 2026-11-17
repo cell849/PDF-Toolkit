@@ -43,6 +43,7 @@ class WorkspaceBehavior:
         self._probe_path = None
         self.document_preview = DocumentPreview(self)
         self._rename_preview = None
+        self._page_organizer = None
         self.preview_host.layout().addWidget(self.document_preview)
         self.document_preview.compare_requested.connect(self._open_comparison)
         self.document_preview.idle.connect(self._resource_idle)
@@ -136,6 +137,7 @@ class WorkspaceBehavior:
         self._paths = list(paths)
         self._results, self._failed, self._errors = dict(results), set(failed), dict(errors)
         self._tool_id = new_id
+        self.batch_filter.setCurrentIndex(0)
         self._cancelled.clear()
         self._undo.clear()
         self._requested_start = False
@@ -364,12 +366,70 @@ class WorkspaceBehavior:
         if self._paths:
             self.files.setCurrentRow(min(max(selected, 0), len(self._paths) - 1))
         self.files.blockSignals(False)
+        self._apply_batch_filter()
+
+    def _apply_batch_filter(self):
+        if not self._ux_ready:
+            return
+        selected = self.batch_filter.currentData()
+        counts = {"all": len(self._paths), "failed": 0, "saved": 0, "pending": 0, "cancelled": 0}
+        first = None
+        for index in range(self.files.count()):
+            state = (
+                "cancelled"
+                if index in self._cancelled
+                else "failed"
+                if index in self._failed
+                else "saved"
+                if index in self._results
+                else "pending"
+            )
+            counts[state] += 1
+            show = selected == "all" or selected == state
+            self.files.item(index).setHidden(not show)
+            if show and first is None:
+                first = index
+        self.batch_filter.setVisible(len(self._paths) > 1)
+        self.batch_filter.blockSignals(True)
+        for index, title in enumerate(("All files", "Failed", "Saved", "Pending", "Cancelled")):
+            key = self.batch_filter.itemData(index)
+            self.batch_filter.setItemText(index, f"{title} · {counts[key]}")
+        self.batch_filter.blockSignals(False)
+        current = self.files.currentItem()
+        if current is not None and current.isHidden():
+            self.files.setCurrentRow(first if first is not None else -1)
+        elif current is None and first is not None:
+            self.files.setCurrentRow(first)
 
     def _selection_changed(self, *_):
         if not self._ux_ready:
             return
+        index = self.files.currentRow()
+        if (
+            len(self._paths) > 1
+            and 0 <= index < len(self._paths)
+            and (index in self._results or index in self._failed)
+        ):
+            path = self._paths[index]
+            outcome = self._errors.get(index) or (
+                self._saved_summary(index) if index in self._results else self._file_ready(path)[1]
+            )
+            self.selected_outcome.setText(f"{path.name}\n{outcome}")
+            self.selected_outcome.show()
+        else:
+            self.selected_outcome.hide()
         rename = bool(self._current_spec() and self._tool_id == "file.rename_copies")
-        self.document_preview.setVisible(not rename)
+        organizing = self._tool_id == "pdf.organize_visual"
+        self.document_preview.setVisible(not rename and not organizing)
+        if self._page_organizer is not None:
+            self._page_organizer.setVisible(organizing)
+            self._page_organizer.set_busy(self._active or not organizing)
+            if organizing:
+                self.document_preview.set_document(None)
+                self._page_organizer.set_sources(self._paths)
+                self.preview_button.setText("Pages")
+                self._update_summary()
+                return
         self.preview_button.setText("Names" if rename else "Preview")
         if rename and self._rename_preview is None:
             from local_pdf_toolkit.ui.rename_preview import RenamePreview
@@ -401,7 +461,12 @@ class WorkspaceBehavior:
             )
             self.document_preview.set_document(
                 path if ready else None,
-                tuple(p for p in outputs if p.suffix.lower() != ".json"),
+                tuple(
+                    p
+                    for p in outputs
+                    if p.suffix.lower() != ".json"
+                    and not (self._tool_id == "pdf.compare" and p.suffix.lower() == ".txt")
+                ),
                 stale,
             )
         if path and ready is False and not self._active:
@@ -533,6 +598,12 @@ class WorkspaceBehavior:
             return "Saved output is no longer available."
         if not documents:
             return f"Report saved · {self._display_bytes(output_size)}. Original files unchanged."
+        if self._tool_id == "pdf.compare":
+            return (
+                f"Comparison saved · {self._display_bytes(output_size)}\n"
+                "Open the PDF for highlighted pages; the text report is in the output folder. "
+                "Pages are matched by page number. Originals unchanged."
+            )
         sizes = [self._records.get(p, {}).get("bytes") for p in sources]
         before = sum(sizes) if sizes and all(isinstance(n, int) and n > 0 for n in sizes) else 0
         text = f"Saved · {self._display_bytes(output_size)}"
@@ -694,6 +765,10 @@ class WorkspaceBehavior:
             parts.insert(0, "Inspect one file, or compare original then cleaned copy")
         elif rename:
             parts.insert(0, f"Save {len(self._paths)} numbered copies in listed order")
+        elif spec and spec.operation_id == "pdf.organize_visual":
+            parts.insert(0, "Save the reviewed thumbnail order as a new PDF")
+        elif spec and spec.operation_id == "pdf.compare":
+            parts.insert(0, "First PDF: original · Second PDF: revised")
         elif spec and spec.input_mode == "multiple":
             parts.insert(0, f"Combine {len(self._paths)} files in listed order")
         elif len(self._paths) > 1:
@@ -725,7 +800,11 @@ class WorkspaceBehavior:
             if spec
             else "Choose a tool"
         )
-        self.start_button.setText(verb)
+        self.start_button.setText(
+            "Save organized copy" if operation == "pdf.organize_visual" else verb
+        )
+        if operation == "pdf.organize_visual" and self._page_organizer is not None:
+            self.start_button.setEnabled(bool(self._page_organizer.value()) and not self._active)
 
     def _guard_run(self):
         self._preflight_errors = {}
@@ -759,7 +838,11 @@ class WorkspaceBehavior:
                     "Open Tool availability to see which local engine is missing.",
                 )
                 return False
-        if not self.document_preview.set_busy(True):
+        if spec.operation_id == "pdf.organize_visual" and not self._page_organizer.value():
+            self._set_result("error", "Review the page plan", self._page_organizer.error_message)
+            return False
+        organizer_idle = self._page_organizer is None or self._page_organizer.set_busy(True)
+        if not self.document_preview.set_busy(True) or not organizer_idle:
             self._requested_start = True
             self._set_active(True)
             self._set_result("working", "Preparing", "Waiting for the preview worker…")
@@ -945,6 +1028,7 @@ class WorkspaceBehavior:
             not self.jobs.running
             and not self._probe_jobs.running
             and not self.document_preview.running
+            and (self._page_organizer is None or not self._page_organizer.running)
         )
         if (self._closing or self._stopping) and workers_idle:
             self._set_active(False)
@@ -957,6 +1041,7 @@ class WorkspaceBehavior:
             self._requested_start
             and not self._probe_jobs.running
             and not self.document_preview.running
+            and (self._page_organizer is None or not self._page_organizer.running)
         ):
             QTimer.singleShot(0, self._resume_requested_start)
 
@@ -975,7 +1060,8 @@ class WorkspaceBehavior:
         if self._probe_jobs.running:
             self._probe_jobs.cancel()
         preview_done = self.document_preview.shutdown()
-        if self._probe_jobs.running or not preview_done:
+        organizer_done = self._page_organizer is None or self._page_organizer.shutdown()
+        if self._probe_jobs.running or not preview_done or not organizer_done:
             return False
         self._probe_temp.cleanup()
         self._preferences.setValue("windowGeometry", self.saveGeometry())

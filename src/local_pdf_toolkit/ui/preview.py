@@ -5,9 +5,10 @@ import tempfile
 from contextlib import suppress
 from pathlib import Path
 
-from PySide6.QtCore import QRectF, Qt
+from PySide6.QtCore import QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QPen, QPixmap
 from PySide6.QtWidgets import (
+    QCheckBox,
     QDialog,
     QGraphicsScene,
     QGraphicsView,
@@ -256,6 +257,83 @@ class PreviewDialog(QDialog):
             super().closeEvent(event)
 
 
+class ComparisonCanvas(PageCanvas):
+    """Zoomable comparison only; PageCanvas retains redaction's fit behavior."""
+
+    view_changed = Signal(object)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._fit = True
+        self._changing_view = False
+        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
+
+    def load(self, path, regions=()):
+        transform = self.transform()
+        center = self.normalized_center()
+        self._changing_view = True
+        try:
+            super().load(path, regions)
+            if not self._fit:
+                self.setTransform(transform)
+                self.set_normalized_center(center)
+        finally:
+            self._changing_view = False
+
+    def fit_page(self):
+        self._fit = True
+        if not self._image_rect.isEmpty():
+            self._changing_view = True
+            self.fitInView(self._image_rect, Qt.AspectRatioMode.KeepAspectRatio)
+            self._changing_view = False
+
+    def set_zoom(self, percent):
+        self._fit = False
+        center = self.normalized_center()
+        self._changing_view = True
+        self.resetTransform()
+        self.scale(percent / 100, percent / 100)
+        self.set_normalized_center(center)
+        self._changing_view = False
+
+    def normalized_center(self):
+        bounds = self._image_rect
+        if bounds.isEmpty():
+            return QPointF(0.5, 0.5)
+        center = self.mapToScene(self.viewport().rect().center())
+        return QPointF(center.x() / bounds.width(), center.y() / bounds.height())
+
+    def set_normalized_center(self, point):
+        self.centerOn(point.x() * self._image_rect.width(), point.y() * self._image_rect.height())
+
+    def resizeEvent(self, event):
+        # Calling PageCanvas.resizeEvent would reset manual zoom on every resize.
+        self._changing_view = True
+        QGraphicsView.resizeEvent(self, event)
+        if self._fit:
+            self.fit_page()
+        self._changing_view = False
+
+    def scrollContentsBy(self, dx, dy):
+        super().scrollContentsBy(dx, dy)
+        if hasattr(self, "_changing_view") and not self._changing_view:
+            self.view_changed.emit(self)
+
+    def wheelEvent(self, event):
+        if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+            percent = min(
+                800,
+                max(
+                    10, self.transform().m11() * 100 * (1.25 if event.angleDelta().y() > 0 else 0.8)
+                ),
+            )
+            self.set_zoom(percent)
+            self.view_changed.emit(self)
+            event.accept()
+            return
+        super().wheelEvent(event)
+
+
 class ComparisonDialog(QDialog):
     """Render two bounded pages sequentially, only after an explicit compare action."""
 
@@ -268,6 +346,7 @@ class ComparisonDialog(QDialog):
         self._closing = False
         self._counts = {}
         self._pending = []
+        self._syncing = False
         self.jobs = JobController(self)
         self.jobs.finished.connect(self._finished)
         layout = QVBoxLayout(self)
@@ -289,6 +368,29 @@ class ComparisonDialog(QDialog):
         self.page.setRange(1, 1)
         bar.addWidget(self.page)
         layout.addLayout(bar)
+        zoom_bar = QHBoxLayout()
+        self.fit_button = QPushButton("Fit")
+        self.fit_button.setAccessibleName("Fit both comparison pages")
+        self.fit_button.clicked.connect(self._fit_pages)
+        zoom_bar.addWidget(self.fit_button)
+        self.actual_button = QPushButton("100% preview")
+        self.actual_button.setToolTip("One rendered preview pixel per logical screen pixel.")
+        self.actual_button.clicked.connect(lambda: self._set_zoom(100))
+        zoom_bar.addWidget(self.actual_button)
+        zoom_bar.addWidget(QLabel("Zoom"))
+        self.zoom = QSpinBox()
+        self.zoom.setAccessibleName("Comparison preview zoom percent")
+        self.zoom.setRange(10, 800)
+        self.zoom.setValue(100)
+        self.zoom.setSuffix("%")
+        self.zoom.setSingleStep(25)
+        self.zoom.valueChanged.connect(self._set_zoom)
+        zoom_bar.addWidget(self.zoom)
+        self.sync = QCheckBox("Sync zoom and pan")
+        self.sync.setChecked(True)
+        zoom_bar.addWidget(self.sync)
+        zoom_bar.addStretch()
+        layout.addLayout(zoom_bar)
         panes = QHBoxLayout()
         self.canvases = []
         self.details = []
@@ -301,7 +403,8 @@ class ComparisonDialog(QDialog):
             details.setWordWrap(True)
             details.setAccessibleName(heading + " file size and dimensions")
             column.addWidget(details)
-            canvas = PageCanvas()
+            canvas = ComparisonCanvas()
+            canvas.view_changed.connect(self._sync_view)
             canvas.setAccessibleName(heading + " page preview")
             column.addWidget(canvas, 1)
             panes.addLayout(column, 1)
@@ -309,8 +412,8 @@ class ComparisonDialog(QDialog):
             self.details.append(details)
         layout.addLayout(panes, 1)
         self.feedback = QLabel(
-            "Preview only. File sizes are exact; previews fit the available space. "
-            "Shorter documents stay on their last page."
+            "100% uses rendered preview pixels; large sources are reduced to 1400 pixels per side. "
+            "Drag or scroll to pan; Ctrl+wheel zooms. Shorter documents stay on their last page."
         )
         self.feedback.setWordWrap(True)
         layout.addWidget(self.feedback)
@@ -320,6 +423,44 @@ class ComparisonDialog(QDialog):
         self.output.currentIndexChanged.connect(self._output_changed)
         self.page.valueChanged.connect(self._request)
         self._request()
+
+    def _fit_pages(self):
+        self._syncing = True
+        try:
+            for canvas in self.canvases:
+                canvas.fit_page()
+            self.zoom.blockSignals(True)
+            self.zoom.setValue(round(self.canvases[0].transform().m11() * 100))
+            self.zoom.blockSignals(False)
+        finally:
+            self._syncing = False
+
+    def _set_zoom(self, percent):
+        self._syncing = True
+        try:
+            for canvas in self.canvases:
+                canvas.set_zoom(percent)
+            self.zoom.blockSignals(True)
+            self.zoom.setValue(round(percent))
+            self.zoom.blockSignals(False)
+        finally:
+            self._syncing = False
+
+    def _sync_view(self, source):
+        if self._syncing:
+            return
+        self._syncing = True
+        try:
+            self.zoom.blockSignals(True)
+            self.zoom.setValue(round(source.transform().m11() * 100))
+            self.zoom.blockSignals(False)
+            if self.sync.isChecked():
+                for target in self.canvases:
+                    if target is not source:
+                        target.set_zoom(source.transform().m11() * 100)
+                        target.set_normalized_center(source.normalized_center())
+        finally:
+            self._syncing = False
 
     def _output_changed(self, *_):
         self.page.blockSignals(True)
@@ -333,10 +474,14 @@ class ComparisonDialog(QDialog):
         self.output.setEnabled(False)
         self.page.setEnabled(False)
         self._pending = list(enumerate((self._source, self.output.currentData())))
-        for canvas, detail in zip(self.canvases, self.details, strict=True):
-            canvas.scene().clear()
-            canvas._image_rect = QRectF()
-            detail.setText("Rendering preview…")
+        self._syncing = True
+        try:
+            for canvas, detail in zip(self.canvases, self.details, strict=True):
+                canvas.scene().clear()
+                canvas._image_rect = QRectF()
+                detail.setText("Rendering preview…")
+        finally:
+            self._syncing = False
         self._next()
 
     def _next(self):
@@ -350,6 +495,9 @@ class ComparisonDialog(QDialog):
             self.page.blockSignals(True)
             self.page.setMaximum(count)
             self.page.blockSignals(False)
+            self.zoom.blockSignals(True)
+            self.zoom.setValue(round(self.canvases[0].transform().m11() * 100))
+            self.zoom.blockSignals(False)
             return
         self._side, self._path = self._pending.pop(0)
         self._rendered_page = min(self.page.value(), self._counts.get(self._path, 1))

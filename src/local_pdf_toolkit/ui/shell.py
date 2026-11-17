@@ -89,6 +89,8 @@ def panel():
 def tool_description(spec):
     descriptions = {
         "image.compare_formats": "Compare JPEG, PNG and WebP sizes and appearance",
+        "pdf.organize_visual": "Arrange, rotate, remove and insert pages visually",
+        "pdf.compare": "Highlight visual differences between two PDFs",
         "pdf.normalize_pages": "Fit selected pages to DIN or custom paper sizes",
         "file.rename_copies": "Preview numbered names and save separate copies",
         "document.details": "View fonts, page sizes, encryption and attachments",
@@ -276,6 +278,7 @@ def build_window(w):
     w.setMinimumSize(760, 620)
     w._operations = w.registry.list_operations()
     w._category = "All tools"
+    w._overview = True
     # This selection model is shared by cards, search, options and keyboard actions.
     w.operation_list = QListWidget(w)
     w.operation_list.addItems([spec.label for spec in w._operations])
@@ -333,11 +336,30 @@ def build_window(w):
     home.addWidget(w.library_title)
     w.library_count = label(f"{len(w._operations)} tools · Choose one to get started", "eyebrow")
     home.addWidget(w.library_count)
+    w.home_views = QStackedWidget()
+    overview = QWidget()
+    categories = QGridLayout(overview)
+    categories.setContentsMargins(0, 0, 0, 0)
+    categories.setSpacing(14)
+    categories.setAlignment(Qt.AlignmentFlag.AlignTop)
+    w.category_buttons = {}
+    for index, name in enumerate(CATEGORIES[1:]):
+        card = button(name, lambda checked=False, n=name: w._browse_tools(n))
+        card.setMinimumHeight(64)
+        card.setAccessibleName(f"Browse {name}")
+        categories.addWidget(card, index // 2, index % 2)
+        w.category_buttons[name] = card
+    browse = button("Browse all tools", lambda: w._browse_tools("All tools"))
+    categories.addWidget(browse, 4, 0, 1, 2)
+    w.home_views.addWidget(overview)
     w.library = ToolLibrary(w)
     library_scroll = QScrollArea()
     library_scroll.setWidgetResizable(True)
     library_scroll.setWidget(w.library)
-    home.addWidget(library_scroll, 1)
+    w.home_views.addWidget(library_scroll)
+    home.addWidget(w.home_views, 1)
+    w.library_title.setText("Choose a category")
+    w.library_count.hide()
     if not w._operations:
         home.addWidget(label("No conversion tools available yet.", "muted"))
     w.pages.addWidget(w.dashboard)
@@ -381,6 +403,21 @@ def build_window(w):
     w.files.itemDoubleClicked.connect(w._open_result)
     w.files.currentRowChanged.connect(w._sync_comparison)
     w.files.hide()
+    from local_pdf_toolkit.ui.controls import ChoiceBox
+
+    w.batch_filter = ChoiceBox()
+    w.batch_filter.setAccessibleName("Filter batch files")
+    for caption, key in (
+        ("All files", "all"),
+        ("Failed", "failed"),
+        ("Saved", "saved"),
+        ("Pending", "pending"),
+        ("Cancelled", "cancelled"),
+    ):
+        w.batch_filter.addItem(caption, key)
+    w.batch_filter.currentIndexChanged.connect(lambda _: w._apply_batch_filter())
+    w.batch_filter.hide()
+    files_layout.addWidget(w.batch_filter)
     files_layout.addWidget(w.files, 1)
     w.preview_button = button("Preview", w._open_preview)
     w.preview_button.setAccessibleName("Preview selected file")
@@ -414,7 +451,11 @@ def build_window(w):
     w.preview_host.setMinimumWidth(220)
     preview_layout = QVBoxLayout(w.preview_host)
     preview_layout.setContentsMargins(0, 0, 0, 0)
-    preview_layout.setSpacing(0)
+    preview_layout.setSpacing(8)
+    w.selected_outcome = label("", "muted")
+    w.selected_outcome.setAccessibleName("Selected file outcome")
+    w.selected_outcome.hide()
+    preview_layout.addWidget(w.selected_outcome)
     w.workspace_splitter.addWidget(w.preview_host)
     w.settings_panel = QWidget()
     w.settings_panel.setObjectName("settingsPanel")
@@ -574,6 +615,7 @@ def build_window(w):
     w.drop_overlay.hide()
     w.search.textChanged.connect(w._filter_tools)
     w.navigation.currentRowChanged.connect(w._category_changed)
+    w.navigation.itemClicked.connect(lambda item: w._browse_tools(item.text()))
     w.navigation.setCurrentRow(0)
     w.operation_list.currentRowChanged.connect(w._options)
     w.operation_list.setCurrentRow(0 if w._operations else -1)
@@ -607,7 +649,7 @@ def sync_workspace(w):
     )
     w.progress.setVisible(active and w._active)
     w.settings_toggle.setVisible(active)
-    w.back_button.setText("‹  All tools" if active else "Tool library")
+    w.back_button.setText("‹  Home" if active else "Tool library")
 
 
 def add_menus(w):

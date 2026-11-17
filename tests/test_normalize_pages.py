@@ -8,7 +8,6 @@ import pytest
 from local_pdf_toolkit.converters.normalize_pages import (
     MAX_PAGE_POINTS,
     PAPER_SIZES_MM,
-    PAPER_SIZES_POINTS,
     POINTS_PER_MM,
     PdfNormalizePagesConverter,
     normalize_page_converters,
@@ -50,6 +49,13 @@ def test_spec_and_factory():
     assert PAPER_SIZES_MM["A4"] == (210, 297)
     assert PAPER_SIZES_MM["B0"] == (1000, 1414)
     assert PAPER_SIZES_MM["C10"] == (28, 40)
+    assert set(PAPER_SIZES_MM) == {f"{series}{i}" for series in "ABC" for i in range(11)}
+    for series in "ABC":
+        for i in range(1, 11):
+            previous = PAPER_SIZES_MM[f"{series}{i - 1}"]
+            current = PAPER_SIZES_MM[f"{series}{i}"]
+            assert abs(current[0] - previous[1] / 2) <= 1
+            assert abs(current[1] - previous[0]) <= 1
     assert "links" in " ".join(converter.spec.limitations)
 
 
@@ -74,11 +80,23 @@ def test_selected_pages_auto_orientation_preserve_original_and_vectors(source, t
     assert updates[-1].completed == updates[-1].total == 3
 
 
-@pytest.mark.parametrize("paper", list(PAPER_SIZES_POINTS))
-def test_every_paper_size_has_expected_dimensions(source, tmp_path, paper):
+@pytest.mark.parametrize(
+    "paper, mm",
+    [
+        ("A0", (841, 1189)),
+        ("A10", (26, 37)),
+        ("B0", (1000, 1414)),
+        ("C10", (28, 40)),
+        ("Letter", (215.9, 279.4)),
+        ("Tabloid", (279.4, 431.8)),
+    ],
+)
+def test_paper_families_extremes_and_us_sizes_have_expected_dimensions(source, tmp_path, paper, mm):
     (result,) = convert(source, tmp_path, {"paper": paper, "orientation": "portrait"})
     with pymupdf.open(result) as document:
-        assert tuple(document[0].rect)[2:] == pytest.approx(PAPER_SIZES_POINTS[paper], abs=0.001)
+        assert tuple(document[0].rect)[2:] == pytest.approx(
+            tuple(dimension * 72 / 25.4 for dimension in mm), abs=0.001
+        )
 
 
 @pytest.mark.parametrize(

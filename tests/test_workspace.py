@@ -474,3 +474,95 @@ def test_comparison_viewer_renders_each_format_candidate(workspace, tmp_path):
     finally:
         dialog.close()
         wait_until(lambda: not dialog.jobs.running, "comparison close")
+
+
+def test_home_categories_search_and_all_tools_are_reachable(workspace):
+    workspace._show_library()
+    assert workspace.home_views.currentIndex() == 0
+    workspace.category_buttons["Images"].click()
+    assert workspace.home_views.currentIndex() == 1
+    assert workspace._category == "Images"
+    workspace._show_library()
+    workspace.search.setText("compress pdf")
+    assert workspace.home_views.currentIndex() == 1
+    assert any(
+        not workspace.operation_list.item(i).isHidden() for i in range(len(workspace._operations))
+    )
+    workspace._show_library()
+    workspace._browse_tools("All tools")
+    assert workspace.home_views.currentIndex() == 1
+    assert all(
+        not workspace.operation_list.item(i).isHidden() for i in range(len(workspace._operations))
+    )
+
+
+def test_batch_filters_preserve_input_mapping_and_failed_retry(workspace, fixture_dir, tmp_path):
+    choose(workspace, "pdf.to_png")
+    invalid = tmp_path / "broken.pdf"
+    invalid.write_bytes(b"broken")
+    (valid,) = copies(fixture_dir, tmp_path, ("valid",))
+    workspace.add_paths((invalid, valid))
+    process(workspace, tmp_path)
+    original_order = list(workspace._paths)
+    workspace.batch_filter.setCurrentIndex(workspace.batch_filter.findData("saved"))
+    assert workspace.files.item(0).isHidden() and not workspace.files.item(1).isHidden()
+    assert workspace.files.currentRow() == 1
+    assert valid.name in workspace.selected_outcome.text()
+    workspace.batch_filter.setCurrentIndex(workspace.batch_filter.findData("failed"))
+    assert not workspace.files.item(0).isHidden() and workspace.files.item(1).isHidden()
+    assert workspace.files.currentRow() == 0
+    assert invalid.name in workspace.selected_outcome.text()
+    invalid.write_bytes(valid.read_bytes())
+    workspace._retry()
+    wait_until(lambda: not workspace._active and not workspace._requested_start, "filtered retry")
+    assert workspace._paths == original_order and not workspace._failed
+    assert set(workspace._results) == {0, 1}
+    workspace.batch_filter.setCurrentIndex(0)
+    assert all(not workspace.files.item(i).isHidden() for i in range(2))
+
+
+def test_visual_organizer_runs_reviewed_plan_in_workspace(workspace, fixture_dir, tmp_path):
+    import pymupdf
+
+    choose(workspace, "pdf.organize_visual")
+    first, second = copies(fixture_dir, tmp_path)
+    workspace.add_paths((first, second))
+    control = workspace._page_organizer
+    wait_until(lambda: bool(control.value()), "organizer scan")
+    assert control.isVisible() and not workspace.document_preview.isVisible()
+    control.grid.setCurrentRow(1)
+    control.move_selected(-1)
+    control.rotate_selected()
+    expected = control.value()
+    workspace.destination.setText(str(tmp_path))
+    workspace._start()
+    wait_until(
+        lambda: not workspace._active and not workspace._requested_start,
+        "organized copy",
+        timeout_ms=20000,
+    )
+    assert not workspace._failed and control.value() == expected
+    result = workspace._results[0][0]
+    with pymupdf.open(result) as pdf:
+        assert len(pdf) == 2 and pdf[0].rotation == 90
+    choose(workspace, "pdf.to_png")
+    workspace.close()
+    wait_until(lambda: not control.running and not workspace.isVisible(), "organizer close")
+
+
+def test_pdf_comparison_worker_shows_pdf_and_keeps_report_out_of_preview(workspace, tmp_path):
+    import pymupdf
+
+    sources = [tmp_path / "old.pdf", tmp_path / "new.pdf"]
+    for path, text in zip(sources, ("before", "after"), strict=True):
+        with pymupdf.open() as pdf:
+            pdf.new_page().insert_text((72, 72), text)
+            pdf.save(path)
+    choose(workspace, "pdf.compare")
+    workspace.add_paths(sources)
+    process(workspace, tmp_path)
+    assert not workspace._failed
+    assert len(workspace._results[0]) == 2
+    _, preview_outputs = workspace._comparison_paths()
+    assert len(preview_outputs) == 1 and preview_outputs[0].suffix == ".pdf"
+    assert "Comparison saved" in workspace._saved_summary(0)

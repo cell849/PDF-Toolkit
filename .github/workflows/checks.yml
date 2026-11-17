@@ -23,5 +23,5 @@ jobs:
       - run: python -m ruff format --check .
       - name: Run tests
         timeout-minutes: 5
-        run: python -m pytest -vv --maxfail=1 --timeout=60
+        run: python -m pytest -q --maxfail=1 --timeout=60
       - run: python -m build

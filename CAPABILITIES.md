@@ -41,7 +41,7 @@ Some benign linked Office documents will consequently be rejected.
 
 Deferred tools: arbitrary PDF content editing, interactive form authoring/filling,
 digital certificate signatures, signing requests, PDF/A conformance validation,
-repair guarantees, document comparison, scanner/camera hardware and ZIP imports.
+repair guarantees, scanner/camera hardware and ZIP imports.
 These need dedicated interfaces, dependencies or correctness work; the app does
 not show them as working tools. Additional reverse conversions are considered
 individually because PDF usually lacks the source document's structure.
@@ -149,3 +149,28 @@ staging contents are refused. Pre-existing untracked crash leftovers are not
 swept. A writable per-user recovery state directory is required. Journals contain
 staging/output paths and bounded output names, never file contents/passwords;
 normal completion removes them, while interrupted records persist until cleanup.
+
+## Focused home, visual organization and PDF comparison
+
+Home now starts with categories and search. Browse all tools retains the full grid.
+Batch filters show All/Failed/Saved/Pending/Cancelled counts without changing file
+order or job mapping. Selected completed/failed files show their individual outcome.
+Comparison viewer supports Fit, 100% preview-pixel scale, zoom and optional linked
+panning. Large sources remain bounded previews; 100% does not promise original pixels.
+
+**Organize PDF pages visually**: add up to 100 PDFs, drag/move selected thumbnails,
+rotate, delete, insert another PDF after selection and undo edits. Thumbnails use
+reviewed private copies, one worker and a 32-icon cache. Saves a new PDF in the
+reviewed page order; source changes require Reload pages. Combined source bound:
+512 MiB / 10,000 pages. Text/vectors remain; annotation/form appearances become
+permanent. Links, interactive forms, bookmarks, attachments, signatures and advanced
+document features are not preserved. This is not secure content redaction.
+
+**Compare two PDFs**: first original, second revised. Produces a visual comparison
+PDF with magenta differing pixels and a separate bounded extracted-text report.
+Pages match by index, without inserted-page alignment or semantic guarantees.
+Up to 200 corresponding pages and 120 million combined rendered pixels; larger
+jobs are rejected. Requested 36–144 DPI is reduced further to a 1400-pixel edge.
+Pixel tolerance is explicit. Fine details can be missed; OCR is not performed.
+Text excerpts/truncation are disclosed. Originals are preserved; report text may
+contain personal content. This is not a privacy inventory or signing validator.
