@@ -130,6 +130,9 @@ def apply_theme(window, dark=None):
         QFrame#inspectorPopup {{ background: {surface}; border: 1px solid {border};
             border-radius: 10px;
         }}
+        QScrollArea#inspectorScroll, QWidget#inspectorViewport,
+        QFrame#inspectorPopup QWidget#options, QScrollArea#helpScroll,
+        QWidget#helpViewport, QLabel#helpText {{ background: {surface}; }}
         QToolButton#infoButton {{ background: transparent; color: {secondary};
             border: 1px solid {secondary}; border-radius: {max(12, round(body_size))}px; padding: 0;
             min-width: 20px; min-height: 20px; font-weight: 600; }}

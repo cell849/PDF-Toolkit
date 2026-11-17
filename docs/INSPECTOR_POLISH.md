@@ -74,7 +74,13 @@ verification before release. Tall popovers deliberately retain a scroll fallback
 - [Workspace, light](inspector-review/workspace-light.png)
 - [Page-size settings](inspector-review/options-dark.png)
 - [Open choice menu](inspector-review/dropdown-dark.png)
+- [KB / MB / KiB / MiB menu](inspector-review/size-units-dark.png)
 - [Sliders](inspector-review/sliders-dark.png)
 - [Enlarged text](inspector-review/large-text.png)
 
 The images are synthetic UI captures under docs and are not bundled into the app.
+
+Follow-up: matched the inspector/help viewport and body surfaces to their frames,
+removing the unintended darker inset. The actual file-size-unit popup was rendered
+and inspected; 8 focused control/layout checks passed. Native Windows mask
+verification remains pending.

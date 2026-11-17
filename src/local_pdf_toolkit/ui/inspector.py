@@ -134,6 +134,8 @@ class InspectorSection(QWidget):
         popup_layout = QVBoxLayout(self.popup)
         popup_layout.setContentsMargins(14, 14, 14, 14)
         self.scroll = QScrollArea()
+        self.scroll.setObjectName("inspectorScroll")
+        self.scroll.viewport().setObjectName("inspectorViewport")
         self.scroll.setWidgetResizable(True)
         self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.scroll.setWidget(body)
