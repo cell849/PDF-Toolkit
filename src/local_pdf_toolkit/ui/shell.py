@@ -146,8 +146,8 @@ class ToolText(QLabel):
 class ToolCard(QPushButton):
     """Size the whole card from its wrapped content rather than empty button text."""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
         self.setSizePolicy(policy)
 
@@ -216,7 +216,7 @@ class ToolLibrary(QWidget):
         self.columns = 0
         self._visible_indices = None
         for index, spec in enumerate(window._operations):
-            card = ToolCard()
+            card = ToolCard(self)
             card.setCursor(Qt.CursorShape.PointingHandCursor)
             card.clicked.connect(lambda checked=False, i=index: window._select_tool(i))
             card.setObjectName("toolCard")
@@ -294,19 +294,25 @@ class ToolLibrary(QWidget):
             if show:
                 visible.append(card)
         self.columns = columns
+        # Qt omits gaps for empty columns; reserve their space so a short
+        # category keeps the same column width as the full library.
+        missing_gaps = max(0, columns - len(visible))
+        self.grid.setContentsMargins(0, 0, 16 + missing_gaps * self.grid.spacing(), 0)
         for index, card in enumerate(visible):
             self.grid.addWidget(card, index // self.columns, index % self.columns)
         for col in range(3):
+            self.grid.setColumnMinimumWidth(col, 1 if col < self.columns else 0)
             self.grid.setColumnStretch(col, 1 if col < self.columns else 0)
         self.update_row_heights()
 
     def update_row_heights(self):
-        heights = {}
-        for index in range(self.grid.count()):
-            row = self.grid.getItemPosition(index)[0]
-            card = self.grid.itemAt(index).widget()
-            heights[row] = max(heights.get(row, 0), card.minimumHeight())
-        for row, height in heights.items():
+        if not self.grid.count():
+            return
+        # Measure every tool at the current column width so switching categories
+        # does not change card heights, even when longer descriptions are hidden.
+        width = self.grid.itemAt(0).widget().width()
+        height = max(card.heightForWidth(width) for card in self.cards)
+        for row in range(self.grid.rowCount()):
             self.grid.setRowMinimumHeight(row, height)
         self.updateGeometry()
 
@@ -323,7 +329,7 @@ class CategoryOverview(QWidget):
         super().__init__()
         self.grid = QGridLayout(self)
         self.grid.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
-        self.grid.setContentsMargins(0, 0, 0, 0)
+        self.grid.setContentsMargins(0, 0, 22, 0)
         self.grid.setSpacing(14)
         self.grid.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.buttons = {}
@@ -344,10 +350,9 @@ class CategoryOverview(QWidget):
         self.columns = columns
         while self.grid.count():
             self.grid.takeAt(0)
+        self.grid.addWidget(self.browse, 0, 0, 1, columns)
         for index, card in enumerate(self.buttons.values()):
-            self.grid.addWidget(card, index // columns, index % columns)
-        rows = (len(self.buttons) + columns - 1) // columns
-        self.grid.addWidget(self.browse, rows, 0, 1, columns)
+            self.grid.addWidget(card, 1 + index // columns, index % columns)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -396,11 +401,15 @@ def build_window(w):
     canvas = QWidget()
     canvas.setObjectName("canvas")
     outer = QVBoxLayout(canvas)
-    outer.setContentsMargins(22, 20, 22, 16)
+    outer.setContentsMargins(22, 20, 0, 16)
     outer.setSpacing(16)
     bar = QHBoxLayout()
+    bar.setContentsMargins(0, 0, 22, 0)
     w.back_button = button("‹  All tools", w._show_library)
+    w.back_button.setMinimumHeight(36)
     bar.addWidget(w.back_button)
+    w.library_title = label("All tools", "title")
+    bar.addWidget(w.library_title)
     bar.addStretch()
     w.settings_toggle = QPushButton("Options")
     w.settings_toggle.setCheckable(True)
@@ -422,8 +431,6 @@ def build_window(w):
     home = QVBoxLayout(w.dashboard)
     home.setContentsMargins(0, 0, 0, 0)
     home.setSpacing(12)
-    w.library_title = label("All tools", "title")
-    home.addWidget(w.library_title)
     w.library_count = label(f"{len(w._operations)} tools · Choose one to get started", "eyebrow")
     home.addWidget(w.library_count)
     w.home_views = QStackedWidget()
@@ -434,6 +441,8 @@ def build_window(w):
     library_scroll = QScrollArea()
     w.library_scroll = library_scroll
     library_scroll.setWidgetResizable(True)
+    library_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+    library_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
     library_scroll.setWidget(w.library)
     w.home_views.addWidget(library_scroll)
     home.addWidget(w.home_views, 1)
@@ -462,6 +471,7 @@ def build_window(w):
     row.addWidget(w.file_heading)
     row.addStretch()
     w.clear_button = button("×", w._clear)
+    w.clear_button.setFixedSize(36, 36)
     w.clear_button.setAccessibleName("Clear all files")
     w.clear_button.setToolTip("Clear all files")
     row.addWidget(w.clear_button)
@@ -654,6 +664,7 @@ def build_window(w):
     w.progress.setTextVisible(False)
     outer.addWidget(w.progress)
     footer = QHBoxLayout()
+    footer.setContentsMargins(0, 0, 22, 0)
     w.feedback = label("Ready when you are.", "muted")
     w.feedback.setAccessibleName("Conversion progress and feedback")
     footer_text = QVBoxLayout()
@@ -710,6 +721,7 @@ def build_window(w):
 def sync_workspace(w):
     active = w.pages.currentWidget() == w.workspace
     w.back_button.setVisible(active)
+    w.library_title.setVisible(not active)
     w.start_button.setVisible(active)
     w.cancel_button.setVisible(active and w._active)
     w.summary.setVisible(active)

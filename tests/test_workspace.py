@@ -518,12 +518,12 @@ def test_all_tools_icon_toggles_library_and_category_overview(workspace, qapp):
     grid = workspace.category_buttons["Convert PDFs"].parentWidget().layout()
     assert [grid.getItemPosition(i)[:2] for i in range(7)] == [
         (0, 0),
-        (0, 1),
-        (0, 2),
         (1, 0),
         (1, 1),
         (1, 2),
         (2, 0),
+        (2, 1),
+        (2, 2),
     ]
 
 

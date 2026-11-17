@@ -53,6 +53,26 @@ def test_all_categories_align_card_text_when_it_fits(qapp):
         close_widget(window, qapp)
 
 
+def test_library_cards_keep_size_across_categories_and_stay_child_widgets(qapp):
+    window = MainWindow(build_registry())
+    try:
+        assert all(card.parentWidget() is window.library for card in window.library.cards)
+        assert all(not card.isWindow() for card in window.library.cards)
+        window.resize(1380, 860)
+        window.show()
+        sizes = set()
+        for category in CATEGORIES:
+            window._browse_tools(category)
+            settle(qapp)
+            sizes.update(
+                (card.width(), card.height()) for card in window.library.cards if card.isVisible()
+            )
+        assert len({height for _, height in sizes}) == 1
+        assert max(width for width, _ in sizes) - min(width for width, _ in sizes) <= 1
+    finally:
+        close_widget(window, qapp)
+
+
 def test_units_and_checkbox_stay_inline_when_space_is_available(qapp):
     from local_pdf_toolkit.ui.inspector import InlineCheckOption
 

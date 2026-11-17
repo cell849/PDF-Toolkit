@@ -6,6 +6,10 @@ from PySide6.QtWidgets import QListWidget, QPushButton, QStyle, QStyledItemDeleg
 
 
 class SidebarToggle(QPushButton):
+    def __init__(self, text):
+        super().__init__(text)
+        self.setMinimumHeight(40)
+
     def _keyboard_focus(self, value):
         self.setProperty("keyboardFocus", value)
         self.style().unpolish(self)
@@ -96,20 +100,23 @@ class _NavigationDelegate(QStyledItemDelegate):
         selected = bool(option.state & QStyle.StateFlag.State_Selected)
         hovered = bool(option.state & QStyle.StateFlag.State_MouseOver)
         if selected or hovered:
-            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setPen(QPen(QColor("#9bc9f5"), 1) if selected else Qt.PenStyle.NoPen)
             painter.setBrush(option.palette.color(QPalette.ColorRole.Highlight))
-            painter.drawRoundedRect(QRectF(cell), 8, 8)
+            painter.drawRoundedRect(QRectF(cell.adjusted(1, 1, -1, -1)), 8, 8)
         if option.state & QStyle.StateFlag.State_HasFocus:
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.setPen(QPen(option.palette.color(QPalette.ColorRole.Link), 2))
             painter.drawRoundedRect(QRectF(cell.adjusted(1, 1, -1, -1)), 7, 7)
-        accent = self.parent().window().property("themeAccent")
-        color = (
-            QColor(accent) if selected and accent else option.palette.color(QPalette.ColorRole.Text)
-        )
-        category_icon(index.row(), color).paint(painter, cell, Qt.AlignmentFlag.AlignCenter)
+        text_color = option.palette.color(QPalette.ColorRole.Text)
+        if selected:
+            # The light and dark selection fills need different orange tones for contrast.
+            selection = option.palette.color(QPalette.ColorRole.Highlight)
+            icon_color = QColor("#a54600" if selection.lightness() > 128 else "#ffad59")
+        else:
+            icon_color = text_color
+        category_icon(index.row(), icon_color).paint(painter, cell, Qt.AlignmentFlag.AlignCenter)
         if not self.parent().collapsed:
-            painter.setPen(color)
+            painter.setPen(text_color)
             label = option.rect.adjusted(52, 0, -4, 0)
             painter.drawText(
                 label,

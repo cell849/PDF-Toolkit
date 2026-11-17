@@ -89,7 +89,10 @@ def main() -> int:
     try:
         from local_pdf_toolkit.ui.main_window import MainWindow
 
+        splash.set_stage("Preparing tools…")
+        app.processEvents()
         registry = build_registry()
+        splash.set_stage("Opening workspace…")
         app.processEvents()
         window = MainWindow(registry)
         window.show()

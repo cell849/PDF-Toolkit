@@ -36,10 +36,10 @@ class StartupScreen(QFrame):
         title.setFont(font)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
-        status = QLabel("Starting…")
-        status.setObjectName("startupStatus")
-        status.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(status)
+        self.status = QLabel("Starting…")
+        self.status.setObjectName("startupStatus")
+        self.status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.status)
         progress = QProgressBar()
         progress.setAccessibleName("Starting Local PDF Toolkit")
         progress.setRange(0, 0)
@@ -48,3 +48,6 @@ class StartupScreen(QFrame):
         layout.addWidget(progress)
         if screen := QApplication.primaryScreen():
             self.move(screen.availableGeometry().center() - self.rect().center())
+
+    def set_stage(self, text):
+        self.status.setText(text)

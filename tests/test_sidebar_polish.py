@@ -51,7 +51,7 @@ def test_navigation_accent_tracks_light_and_dark_theme(qapp):
         qapp.sendPostedEvents(None, QEvent.Type.DeferredDelete)
 
 
-def test_selected_icon_uses_theme_accent_in_real_window(qapp):
+def test_selected_icon_and_cell_border_in_real_window(qapp):
     from local_pdf_toolkit.app import build_registry
     from local_pdf_toolkit.ui.main_window import MainWindow
 
@@ -66,13 +66,25 @@ def test_selected_icon_uses_theme_accent_in_real_window(qapp):
         rect = nav.visualItemRect(nav.item(1))
         image = nav.viewport().grab().toImage()
         ratio = image.devicePixelRatio()
-        pixels = (
+        pixels = [
             image.pixelColor(x, y)
             for x in range(int(rect.left() * ratio), int(rect.right() * ratio))
             for y in range(int(rect.top() * ratio), int(rect.bottom() * ratio))
-        )
+        ]
+        assert any(p.red() > 220 and 130 < p.green() < 200 and p.blue() < 120 for p in pixels)
         assert any(p.red() >= 100 and p.green() >= 150 and p.blue() >= 210 for p in pixels)
     finally:
         window.close()
         window.deleteLater()
         qapp.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+
+
+def test_selected_icon_oranges_contrast_with_selection_fills():
+    def luminance(value):
+        channels = [int(value[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+        linear = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+        return sum(c * weight for c, weight in zip(linear, (0.2126, 0.7152, 0.0722), strict=True))
+
+    for orange, colors in (("#a54600", LIGHT), ("#ffad59", DARK)):
+        foreground, background = sorted((luminance(orange), luminance(colors["selection"])))
+        assert (background + 0.05) / (foreground + 0.05) >= 3

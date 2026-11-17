@@ -6,6 +6,35 @@ from local_pdf_toolkit.app import build_registry
 from local_pdf_toolkit.ui.main_window import MainWindow
 
 
+def test_constructing_window_does_not_show_temporary_top_level_widgets(qapp):
+    from PySide6.QtCore import QEvent, QObject
+    from PySide6.QtWidgets import QWidget
+
+    class ShowMonitor(QObject):
+        def __init__(self):
+            super().__init__()
+            self.windows = []
+
+        def eventFilter(self, watched, event):
+            if event.type() == QEvent.Type.Show and isinstance(watched, QWidget):
+                if watched.isWindow():
+                    self.windows.append(type(watched).__name__)
+            return False
+
+    monitor = ShowMonitor()
+    qapp.installEventFilter(monitor)
+    window = None
+    try:
+        window = MainWindow(build_registry())
+        qapp.processEvents()
+        assert monitor.windows == []
+    finally:
+        qapp.removeEventFilter(monitor)
+        if window is not None:
+            window.close()
+            window.deleteLater()
+
+
 def test_idle_window_does_not_load_pdf_engine(tmp_path):
     # Use a fresh process: other tests may already have loaded the engine.
     code = """
