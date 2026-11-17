@@ -144,6 +144,9 @@ class FormBody(QWidget):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.measure()
+        # Parent scroll-area geometry can settle after this resize event.
+        # Measure once more with the final width, including wrapped labels.
+        QTimer.singleShot(0, self.measure)
 
     def changeEvent(self, event):
         super().changeEvent(event)

@@ -218,7 +218,11 @@ def test_all_tool_dropdowns_fit_fields_and_keep_values(qapp, dark, width, scale)
                     if field.isHidden():
                         assert caption.isHidden()
                         continue
-                    context = f"{spec.operation_id}: {caption.text()}, {width}px / {scale}%"
+                    context = (
+                        f"{spec.operation_id}: {caption.text()}, {width}px / {scale}%, "
+                        f"body={section.body.size()}, layout={form.geometry()}, "
+                        f"caption hint={caption.sizeHint()}, minimum={caption.minimumHeight()}"
+                    )
                     assert caption.geometry().top() > previous_bottom, context
                     assert field.geometry().top() > caption.geometry().bottom(), context
                     assert field.height() >= field.sizeHint().height(), context
