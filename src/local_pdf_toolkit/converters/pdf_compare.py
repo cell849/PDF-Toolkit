@@ -6,7 +6,6 @@ import math
 from contextlib import ExitStack
 from pathlib import Path
 
-import pymupdf
 from PIL import Image, ImageChops
 
 from local_pdf_toolkit.converters.pdf_images import PdfImagesConverter
@@ -109,6 +108,8 @@ class PdfComparisonConverter:
         return values
 
     def convert(self, input_path, output_dir, options, progress, cancel_token):
+        import pymupdf
+
         paths = self._inputs(input_path)
         values = self.validate_options(options)
         cancel_token.raise_if_cancelled()
@@ -266,6 +267,8 @@ class PdfComparisonConverter:
 
     @staticmethod
     def _visual_page(report, images, mask, pages, row, scale):
+        import pymupdf
+
         result = report.new_page(width=842, height=595)
         result.insert_textbox(pymupdf.Rect(20, 15, 822, 55), row, fontsize=10)
         for side, image in enumerate(images):

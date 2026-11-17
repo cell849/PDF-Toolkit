@@ -5,7 +5,6 @@ import re
 import warnings
 from pathlib import Path
 
-import pymupdf
 from PIL import Image, ImageOps, UnidentifiedImageError, features
 
 from local_pdf_toolkit.core.contracts import ConverterSpec, OptionDefinition, Progress
@@ -258,6 +257,8 @@ class ImagesPdfConverter:
         return {"page_size": value}
 
     def convert(self, input_path, output_dir, options, progress, cancel_token):
+        import pymupdf
+
         opts = self.validate_options(options)
         cancel_token.raise_if_cancelled()
         paths = (Path(input_path),) if isinstance(input_path, str | Path) else tuple(input_path)

@@ -3,8 +3,6 @@
 import math
 from pathlib import Path
 
-import pymupdf
-
 from local_pdf_toolkit.converters.images import safe_stem
 from local_pdf_toolkit.converters.pdf_images import MAX_PIXELS, PdfImagesConverter
 from local_pdf_toolkit.core.contracts import ConverterSpec, OptionDefinition, Progress
@@ -61,6 +59,8 @@ class PdfCompressConverter:
         return result
 
     def convert(self, input_path, output_dir, options, progress, cancel_token):
+        import pymupdf
+
         opts = self.validate_options(options)
         cancel_token.raise_if_cancelled()
         try:

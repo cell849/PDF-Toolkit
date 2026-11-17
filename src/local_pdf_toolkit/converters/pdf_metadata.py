@@ -5,8 +5,6 @@ import math
 from pathlib import Path
 from uuid import uuid4
 
-import pymupdf
-
 from local_pdf_toolkit.converters.pdf_images import MAX_PIXELS, PdfImagesConverter
 from local_pdf_toolkit.core.contracts import ConverterSpec, OptionDefinition, Progress
 from local_pdf_toolkit.core.errors import ConversionError, ErrorCode
@@ -52,6 +50,8 @@ class PdfMetadataConverter:
         return {"dpi": dpi}
 
     def convert(self, input_path, output_dir, options, progress, cancel_token):
+        import pymupdf
+
         dpi = self.validate_options(options)["dpi"]
         cancel_token.raise_if_cancelled()
         name = f"clean-document-{uuid4().hex[:12]}.pdf"

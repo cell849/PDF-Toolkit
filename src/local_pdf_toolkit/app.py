@@ -8,6 +8,8 @@ from local_pdf_toolkit.core.registry import ConverterRegistry
 
 
 def build_registry():
+    # Keep converter registration lightweight: PDF engines are loaded by the
+    # operations that use them, rather than by the idle window.
     from local_pdf_toolkit.converters.compress import PdfCompressConverter
     from local_pdf_toolkit.converters.document_details import DocumentDetailsConverter
     from local_pdf_toolkit.converters.image_comparison import ImageComparisonConverter

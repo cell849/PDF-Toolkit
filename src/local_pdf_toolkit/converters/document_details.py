@@ -7,8 +7,6 @@ import zipfile
 from pathlib import Path
 from uuid import uuid4
 
-import pymupdf
-
 from local_pdf_toolkit.converters.file_probe import FileProbeConverter
 from local_pdf_toolkit.converters.images import FORMATS, open_image
 from local_pdf_toolkit.converters.inspector import SUPPORTED
@@ -48,6 +46,8 @@ def _report_text(details, limits):
 
 
 def _pdf_details(path, token, limits):
+    import pymupdf
+
     with pymupdf.open(path) as document:
         if not document.is_pdf or document.is_repaired or not 0 < len(document) <= MAX_PAGES:
             raise ConversionError(

@@ -7,7 +7,6 @@ import tempfile
 from pathlib import Path
 from uuid import uuid4
 
-import pymupdf
 from PIL import Image
 
 from local_pdf_toolkit.converters.images import FORMATS, open_image
@@ -53,6 +52,8 @@ class PreviewConverter:
             return FORMATS[image.format]
 
     def convert(self, input_path, output_dir, options, progress, cancel_token):
+        import pymupdf
+
         page_number = self.validate_options(options)["page"]
         path = Path(input_path)
         cancel_token.raise_if_cancelled()

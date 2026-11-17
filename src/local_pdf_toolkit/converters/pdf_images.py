@@ -4,8 +4,6 @@ import math
 import re
 from pathlib import Path
 
-import pymupdf
-
 from local_pdf_toolkit.core.contracts import ConverterSpec, OptionDefinition, Progress
 from local_pdf_toolkit.core.errors import ConversionError, ErrorCode
 from local_pdf_toolkit.core.formats import FileFormat
@@ -71,6 +69,8 @@ class PdfImagesConverter:
         )
 
     def _open(self, path):
+        import pymupdf
+
         try:
             if not path.is_file():
                 raise ConversionError(ErrorCode.INVALID_INPUT, "Choose a regular PDF file.")
@@ -126,6 +126,8 @@ class PdfImagesConverter:
         return values
 
     def convert(self, input_path, output_dir, options, progress, cancel_token):
+        import pymupdf
+
         options = self.validate_options(options)
         cancel_token.raise_if_cancelled()
         extension = "jpg" if self.output_format == FileFormat.JPEG else "png"

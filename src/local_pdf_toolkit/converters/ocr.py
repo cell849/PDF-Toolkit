@@ -12,8 +12,6 @@ import threading
 import time
 from pathlib import Path
 
-import pymupdf
-
 from local_pdf_toolkit.converters.pdf_images import MAX_PAGES, MAX_PIXELS, PdfImagesConverter
 from local_pdf_toolkit.core.contracts import ConverterSpec, OptionDefinition, Progress
 from local_pdf_toolkit.core.errors import ConversionError, ErrorCode
@@ -209,6 +207,8 @@ class OcrConverter:
         return values
 
     def convert(self, input_path, output_dir, options, progress, cancel_token):
+        import pymupdf
+
         options = self.validate_options(options)
         cancel_token.raise_if_cancelled()
         stem = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", Path(input_path).stem).rstrip(" .")[:100]
@@ -262,6 +262,8 @@ class OcrConverter:
             ) from exc
 
     def _ocr_page(self, page, result, binary, work, options, cancel_token):
+        import pymupdf
+
         rotation = page.rotation
         try:
             # OCR the unrotated crop area, then restore its original PDF geometry.

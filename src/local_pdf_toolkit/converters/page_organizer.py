@@ -8,8 +8,6 @@ import stat
 from pathlib import Path
 from uuid import uuid4
 
-import pymupdf
-
 from local_pdf_toolkit.converters.pdf_images import MAX_INPUT_BYTES, MAX_PAGES, PdfImagesConverter
 from local_pdf_toolkit.converters.pdf_tools import _safe_stem
 from local_pdf_toolkit.core.contracts import ConverterSpec, OptionDefinition, Progress
@@ -193,6 +191,8 @@ class PdfPageOrganizerConverter:
         return {"plan": canonical_plan(parse_plan(options.get("plan", "")))}
 
     def convert(self, input_path, output_dir, options, progress, cancel_token):
+        import pymupdf
+
         plan = parse_plan(self.validate_options(options)["plan"])
         paths = _inputs(input_path)
         if set(map(str, paths)) != {source["path"] for source in plan["sources"]}:
@@ -252,6 +252,8 @@ class OrganizerPreviewConverter:
     """Private worker: snapshot metadata, or one strictly bounded thumbnail at a time."""
 
     def convert(self, input_path, output_dir, options, progress, cancel_token):
+        import pymupdf
+
         cancel_token.raise_if_cancelled()
         with OutputTransaction(Path(output_dir)) as outputs:
             names = []

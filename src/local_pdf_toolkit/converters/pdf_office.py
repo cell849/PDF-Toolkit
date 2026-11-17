@@ -6,8 +6,6 @@ import math
 import re
 from pathlib import Path
 
-import pymupdf
-
 from local_pdf_toolkit.converters.pdf_images import MAX_PIXELS, PdfImagesConverter, page_selection
 from local_pdf_toolkit.core.contracts import ConverterSpec, OptionDefinition, Progress
 from local_pdf_toolkit.core.errors import ConversionError, ErrorCode
@@ -178,6 +176,8 @@ class PdfOfficeConverter:
 
     @staticmethod
     def _pptx(module, document, pages, target, options, progress, cancel_token):
+        import pymupdf
+
         output = module.Presentation()
         first = document[pages[0]].rect
         # OOXML presentation dimensions are limited to 1–56 inches. Scale unusually

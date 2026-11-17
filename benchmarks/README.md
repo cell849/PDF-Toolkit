@@ -1,5 +1,17 @@
 # Reproducible offline performance review
 
+For Linux idle-window memory, run the following in several fresh processes with
+no other copy of the app running (shared pages affect private-memory readings):
+
+```sh
+QT_QPA_PLATFORM=offscreen python benchmarks/benchmark_idle_memory.py
+```
+
+The script opens the window, processes its initial events and reads Linux
+`/proc/self/smaps_rollup`. It reports RSS, proportional and private pages in KiB,
+plus elapsed startup time. It measures an offscreen development environment,
+not a frozen Windows build or memory consumed during document processing.
+
 Use the project's Python environment with the development dependencies installed:
 
 ```sh

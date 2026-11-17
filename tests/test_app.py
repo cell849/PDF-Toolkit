@@ -1,5 +1,28 @@
+import os
+import subprocess
+import sys
+
 from local_pdf_toolkit.app import build_registry
 from local_pdf_toolkit.ui.main_window import MainWindow
+
+
+def test_idle_window_does_not_load_pdf_engine(tmp_path):
+    # Use a fresh process: other tests may already have loaded the engine.
+    code = """
+import sys
+from PySide6.QtWidgets import QApplication
+from local_pdf_toolkit.app import build_registry
+from local_pdf_toolkit.ui.main_window import MainWindow
+app = QApplication([])
+window = MainWindow(build_registry())
+window.show()
+app.processEvents()
+assert 'pymupdf' not in sys.modules
+window.close()
+"""
+    env = os.environ.copy()
+    env.update(QT_QPA_PLATFORM="offscreen", XDG_CONFIG_HOME=str(tmp_path))
+    subprocess.run([sys.executable, "-c", code], env=env, check=True, timeout=30)
 
 
 def test_application_registry_and_all_option_forms(qapp):

@@ -3,8 +3,6 @@
 import math
 from pathlib import Path
 
-import pymupdf
-
 from local_pdf_toolkit.converters.pdf_images import MAX_PIXELS, PdfImagesConverter, page_selection
 from local_pdf_toolkit.converters.pdf_tools import _safe_stem
 from local_pdf_toolkit.core.contracts import ConverterSpec, OptionDefinition, Progress
@@ -220,6 +218,8 @@ class PdfNormalizePagesConverter:
         return PAPER_SIZES_POINTS[values["paper"]]
 
     def _normalize(self, source, index, result, values):
+        import pymupdf
+
         source_page = source[index]
         width, height = sorted(self._dimensions(values))
         landscape = values["orientation"] == "landscape" or (
@@ -257,6 +257,8 @@ class PdfNormalizePagesConverter:
                 )
 
     def convert(self, input_path, output_dir, options, progress, cancel_token):
+        import pymupdf
+
         values = self.validate_options(options)
         path = self._path(input_path)
         cancel_token.raise_if_cancelled()

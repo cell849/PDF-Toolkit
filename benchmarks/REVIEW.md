@@ -1,5 +1,16 @@
 # Targeted performance review
 
+## Idle memory follow-up
+
+On Linux/Python 3.13 with Qt offscreen, five alternating fresh-process samples
+before and after deferring PDF-engine imports produced median private memory of
+122,396 KiB and 94,004 KiB respectively (23.2% less). Median elapsed startup
+was 0.492 s and 0.407 s; these short, warm-cache timings are environment-specific.
+The window was opened and its initial events processed; no document was loaded.
+The PDF engine is still loaded when needed, so processing memory is not expected
+to fall by this amount. Windows and frozen-app memory were not measured. See
+`benchmark_idle_memory.py` and `README.md` for the measurement and limitations.
+
 Reference: `791dfefbb3fc7e109dee892afbe090905c4e5404`. Baseline source hashes in
 `review-baseline-linux.json` and `review-supplemental-linux.json` match exactly.
 After measurements include uncommitted fixes, identified by source hashes in

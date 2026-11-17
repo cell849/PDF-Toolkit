@@ -11,8 +11,6 @@ from contextlib import contextmanager
 from pathlib import Path
 from uuid import uuid4
 
-import pymupdf
-
 from local_pdf_toolkit.converters.pdf_images import MAX_INPUT_BYTES, MAX_PIXELS, PdfImagesConverter
 from local_pdf_toolkit.core.contracts import ConverterSpec, OptionDefinition, Progress
 from local_pdf_toolkit.core.errors import ConversionError, ErrorCode
@@ -108,6 +106,8 @@ def _regions(text):
 
 def _verify(path, source, cancel_token):
     """Fail closed if the rebuilt PDF contains original nonvisual data structures."""
+    import pymupdf
+
     with pymupdf.open(path) as document:
         if (
             len(document) != len(source)
@@ -190,6 +190,8 @@ class PdfRedactionConverter:
         return {"dpi": dpi, "regions": regions, "source_sha256": source_sha256}
 
     def convert(self, input_path, output_dir, options, progress, cancel_token):
+        import pymupdf
+
         options = self.validate_options(options)
         regions = _regions(options["regions"])
         dpi = options["dpi"]

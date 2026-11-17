@@ -5,8 +5,6 @@ import secrets
 from contextlib import ExitStack
 from pathlib import Path
 
-import pymupdf
-
 from local_pdf_toolkit.converters.pdf_images import (
     MAX_INPUT_BYTES,
     MAX_PAGES,
@@ -180,6 +178,8 @@ class PdfToolConverter:
 
     def _open_unlock(self, path, password=None):
         """Validate encrypted documents without mistaking parser repair for success."""
+        import pymupdf
+
         document = None
         try:
             if not path.is_file() or path.stat().st_size > MAX_INPUT_BYTES:
@@ -270,6 +270,8 @@ class PdfToolConverter:
         return values
 
     def convert(self, input_path, output_dir, options, progress, cancel_token):
+        import pymupdf
+
         values = self.validate_options(options)
         paths = self._inputs(input_path)
         cancel_token.raise_if_cancelled()
@@ -317,6 +319,8 @@ class PdfToolConverter:
             progress(Progress(completed, len(paths)))
 
     def _produce(self, document, stem, values, outputs, progress, token):
+        import pymupdf
+
         operation = self.operation
         pages = page_selection(values.get("pages", "all"), len(document))
         if operation in ("to_text", "to_markdown"):
@@ -380,6 +384,8 @@ class PdfToolConverter:
         return [name]
 
     def _edit_page(self, page, values, completed):
+        import pymupdf
+
         if self.operation == "rotate":
             page.set_rotation((page.rotation + values["angle"]) % 360)
         elif self.operation == "crop":
