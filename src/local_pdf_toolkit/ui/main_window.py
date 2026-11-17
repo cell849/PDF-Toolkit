@@ -68,11 +68,15 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         self._category = name
         from local_pdf_toolkit.ui.shell import CATEGORIES
 
+        self.navigation.blockSignals(True)
         self.navigation.setCurrentRow(CATEGORIES.index(name))
+        self.navigation.blockSignals(False)
         self._filter_tools(self.search.text())
         self.pages.setCurrentWidget(self.dashboard)
 
     def _sidebar_clicked(self, item):
+        if self.navigation.double_activation:
+            return
         if (
             item.text() == "All tools"
             and self.navigation.previous_row == 0
@@ -118,7 +122,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         )
         self.sidebar.setMinimumWidth(64 if collapsed else expanded_width)
         self.sidebar.setMaximumWidth(64 if collapsed else expanded_width + 20)
-        self.sidebar_toggle.setFixedWidth(36 if collapsed else 40)
+        self.sidebar_toggle.setFixedWidth(40)
         self.sidebar_toggle.setText("›" if collapsed else "‹")
         description = "Expand sidebar" if collapsed else "Collapse sidebar"
         self.sidebar_toggle.setAccessibleName(description)
@@ -323,7 +327,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
             return
         spec = self._operations[index]
         privacy = spec.operation_id.startswith("metadata.")
-        self.options_heading.setText("  Options")
+        self.options_heading.setText(" Options")
         self.report_button.setVisible(
             privacy or spec.operation_id in ("pdf.redact", "document.details")
         )
@@ -539,7 +543,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                     "Percent means bytes to keep."
                 )
             widget.setToolTip("")
-            if option.name == "allow_downscale":
+            if isinstance(widget, QCheckBox):
                 widget = InlineCheckOption(widget, display_label, explanation)
                 target_form.addRow(widget)
                 self._option_rows[option.name] = (widget, widget)
@@ -568,7 +572,10 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         if not self.form.rowCount():
             while self.advanced_form.rowCount():
                 row = self.advanced_form.takeRow(0)
-                self.form.addRow(row.labelItem.widget(), row.fieldItem.widget())
+                if row.labelItem is None:
+                    self.form.addRow(row.fieldItem.widget())
+                else:
+                    self.form.addRow(row.labelItem.widget(), row.fieldItem.widget())
         self.notice.set_help_text(" ".join(spec.limitations))
         self.notice.setAccessibleName("Tool requirements and limitations")
         self.notice.setVisible(bool(spec.limitations))

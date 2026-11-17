@@ -3,7 +3,6 @@
 import multiprocessing
 import sys
 
-from local_pdf_toolkit.converters.pdf_images import PdfImagesConverter
 from local_pdf_toolkit.core.formats import FileFormat
 from local_pdf_toolkit.core.registry import ConverterRegistry
 
@@ -23,6 +22,7 @@ def build_registry():
     from local_pdf_toolkit.converters.office_pdf import office_converters
     from local_pdf_toolkit.converters.page_organizer import PdfPageOrganizerConverter
     from local_pdf_toolkit.converters.pdf_compare import PdfComparisonConverter
+    from local_pdf_toolkit.converters.pdf_images import PdfImagesConverter
     from local_pdf_toolkit.converters.pdf_metadata import PdfMetadataConverter
     from local_pdf_toolkit.converters.pdf_office import pdf_office_converters
     from local_pdf_toolkit.converters.pdf_tools import pdf_tool_converters
@@ -69,8 +69,6 @@ def main() -> int:
         return self_test()
     from PySide6.QtWidgets import QApplication
 
-    from local_pdf_toolkit.ui.main_window import MainWindow
-
     if sys.platform == "win32":
         import ctypes
 
@@ -81,6 +79,18 @@ def main() -> int:
     app.setWindowIcon(app_icon())
     app.setApplicationName("Local PDF Toolkit")
     app.setApplicationVersion("0.8.3")
-    window = MainWindow(build_registry())
-    window.show()
+    from local_pdf_toolkit.ui.startup import StartupScreen
+
+    splash = StartupScreen()
+    splash.show()
+    app.processEvents()
+    try:
+        from local_pdf_toolkit.ui.main_window import MainWindow
+
+        registry = build_registry()
+        app.processEvents()
+        window = MainWindow(registry)
+        window.show()
+    finally:
+        splash.close()
     return app.exec()

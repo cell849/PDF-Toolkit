@@ -527,6 +527,17 @@ def test_all_tools_icon_toggles_library_and_category_overview(workspace, qapp):
     ]
 
 
+def test_all_tools_toggles_on_fast_double_click(workspace, qapp):
+    workspace._show_library()
+    navigation = workspace.navigation
+    point = navigation.visualItemRect(navigation.item(0)).center()
+    QTest.mouseClick(navigation.viewport(), Qt.MouseButton.LeftButton, pos=point)
+    assert workspace.home_views.currentIndex() == 1
+    QTest.mouseDClick(navigation.viewport(), Qt.MouseButton.LeftButton, pos=point)
+    QTest.mouseRelease(navigation.viewport(), Qt.MouseButton.LeftButton, pos=point)
+    assert workspace.home_views.currentIndex() == 0
+
+
 def test_batch_filters_preserve_input_mapping_and_failed_retry(workspace, fixture_dir, tmp_path):
     choose(workspace, "pdf.to_png")
     invalid = tmp_path / "broken.pdf"

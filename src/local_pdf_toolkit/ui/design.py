@@ -55,6 +55,7 @@ def apply_theme(window, dark=None):
     success, success_bg = ("#a5dfb6", "#20382a") if dark else ("#24683b", "#effaf2")
     partial_bg = "#3a3020" if dark else "#fff7e6"
     scroll_thumb = "#788493" if dark else "#88919e"
+    window.setProperty("themeAccent", accent)
     palette = window.palette()
     for role, color in (
         (QPalette.ColorRole.Window, base),
@@ -66,6 +67,7 @@ def apply_theme(window, dark=None):
         (QPalette.ColorRole.ButtonText, text),
         (QPalette.ColorRole.Highlight, selection),
         (QPalette.ColorRole.HighlightedText, text),
+        (QPalette.ColorRole.Link, accent),
         (QPalette.ColorRole.PlaceholderText, secondary),
         (QPalette.ColorRole.Mid, border),
         (QPalette.ColorRole.ToolTipBase, surface),
@@ -150,7 +152,8 @@ def apply_theme(window, dark=None):
         QPushButton#disclosure:checked {{ color: {accent}; }}
         QPushButton#disclosure:focus {{ border-color: {accent}; }}
         QPushButton#toolCard {{ text-align: left; padding: 0; }}
-        QPushButton#toolCard:hover {{ background: {surface}; border: 2px solid {accent}; }}
+        QPushButton#toolCard:hover {{ background: {surface}; border: 1px solid {accent}; }}
+        QPushButton#toolCard:focus {{ border: 1px solid {accent}; }}
         QFrame#resultBanner[state="ready"] {{ background: transparent; border: 0; }}
         QListWidget, QListView, QTableView {{ background: {surface}; color: {text};
             border: 1px solid {border}; border-radius: 7px; padding: 4px; outline: 0;
@@ -165,9 +168,8 @@ def apply_theme(window, dark=None):
         }}
         QListWidget::item:hover, QListView::item:hover {{ background: {selection}; }}
         QListWidget::item:focus {{ border: 1px solid {accent}; }}
-        QListWidget#navigation {{ background: transparent; border: 0; }}
-        QListWidget#navigation[compact="true"] {{ padding: 0; }}
-        QListWidget#navigation[compact="true"]::item {{ padding: 0; margin: 3px 0; }}
+        QListWidget#navigation {{ background: transparent; border: 0; padding: 0; }}
+        QListWidget#navigation::item {{ padding: 0; margin: 0; border: 0; }}
         QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {{ background: {surface};
             color: {text}; border: 1px solid {border}; border-radius: 7px;
             padding: 6px 8px; min-height: 20px; selection-background-color: {selection};

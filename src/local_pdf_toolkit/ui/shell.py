@@ -1,6 +1,6 @@
 """Tool library and focused workspaces; conversion behavior lives in MainWindow."""
 
-from PySide6.QtCore import QEvent, QSize, Qt
+from PySide6.QtCore import QEvent, QRect, QSize, Qt
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -130,6 +130,19 @@ def tool_description(spec):
     return category(spec)
 
 
+class ToolText(QLabel):
+    """Measure wrapped card text with the same font and width used to paint it."""
+
+    def heightForWidth(self, width):
+        metrics = self.fontMetrics()
+        rect = metrics.boundingRect(
+            QRect(0, 0, max(1, width), 1_000_000),
+            Qt.TextFlag.TextWordWrap | Qt.AlignmentFlag.AlignLeft,
+            self.text(),
+        )
+        return max(metrics.height(), rect.height()) + 1
+
+
 class ToolCard(QPushButton):
     """Size the whole card from its wrapped content rather than empty button text."""
 
@@ -144,6 +157,14 @@ class ToolCard(QPushButton):
     def sizeHint(self):
         return QSize(260, self.heightForWidth(260)).expandedTo(self.minimumSizeHint())
 
+    @staticmethod
+    def _content_height(widget, width):
+        return (
+            widget.heightForWidth(width)
+            if widget.hasHeightForWidth()
+            else widget.sizeHint().height()
+        )
+
     def heightForWidth(self, width):
         content = self.layout()
         margins = content.contentsMargins()
@@ -154,11 +175,7 @@ class ToolCard(QPushButton):
         height += max(0, content.count() - 1) * content.spacing()
         for index in range(content.count()):
             text = content.itemAt(index).widget()
-            height += (
-                text.heightForWidth(available)
-                if text.hasHeightForWidth()
-                else text.sizeHint().height()
-            )
+            height += self._content_height(text, available)
         return max(164, height)
 
     def event(self, event):
@@ -178,11 +195,7 @@ class ToolCard(QPushButton):
         available = max(1, self.width() - margins.left() - margins.right())
         for index in range(content.count()):
             text = content.itemAt(index).widget()
-            text.setFixedHeight(
-                text.heightForWidth(available)
-                if text.hasHeightForWidth()
-                else text.sizeHint().height()
-            )
+            text.setFixedHeight(self._content_height(text, available))
         height = self.heightForWidth(self.width())
         if self.minimumHeight() != height:
             self.setMinimumHeight(height)
@@ -201,6 +214,7 @@ class ToolLibrary(QWidget):
         self.grid.setSpacing(14)
         self.grid.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.columns = 0
+        self._visible_indices = None
         for index, spec in enumerate(window._operations):
             card = ToolCard()
             card.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -233,16 +247,26 @@ class ToolLibrary(QWidget):
             engine = required_engine(spec)
             if engine and engine.lower() not in explanation.lower():
                 explanation = f"Requires separately installed {engine}. " + explanation
-            if explanation:
-                info = InfoButton(explanation)
-                info.setAccessibleName(f"About {spec.label}")
-                header_row.addWidget(info)
+            info = InfoButton(explanation)
+            info.setAccessibleName(f"About {spec.label}")
+            info_size = info.sizePolicy()
+            info_size.setRetainSizeWhenHidden(True)
+            info.setSizePolicy(info_size)
+            header_row.addWidget(info)
+            info.setVisible(bool(explanation))
             content.addWidget(header)
-            title = label(spec.label.replace(" / resize / compress", ""), "section")
+            title = ToolText(spec.label.replace(" / resize / compress", ""))
+            title.setObjectName("section")
+            title.setWordWrap(True)
+            title.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
             content.addWidget(title)
             subtitle = tool_description(spec)
             card.setAccessibleDescription(subtitle)
-            content.addWidget(label(subtitle, "muted"))
+            description = ToolText(subtitle)
+            description.setObjectName("muted")
+            description.setWordWrap(True)
+            description.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            content.addWidget(description)
             for child in card.findChildren(QLabel):
                 child.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
                 child.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
@@ -250,6 +274,15 @@ class ToolLibrary(QWidget):
         self.reflow()
 
     def reflow(self):
+        indices = tuple(
+            index
+            for index in range(len(self.cards))
+            if not self.window.operation_list.item(index).isHidden()
+        )
+        columns = max(1, min(3, self.width() // 260))
+        if indices == self._visible_indices and columns == self.columns:
+            return
+        self._visible_indices = indices
         for row in range(self.grid.rowCount()):
             self.grid.setRowMinimumHeight(row, 0)
         while self.grid.count():
@@ -260,7 +293,7 @@ class ToolLibrary(QWidget):
             card.setVisible(show)
             if show:
                 visible.append(card)
-        self.columns = max(1, min(3, self.width() // 260))
+        self.columns = columns
         for index, card in enumerate(visible):
             self.grid.addWidget(card, index // self.columns, index % self.columns)
         for col in range(3):
@@ -506,7 +539,7 @@ def build_window(w):
     w.settings_panel = QWidget()
     w.settings_panel.setObjectName("settingsPanel")
     settings = QVBoxLayout(w.settings_panel)
-    settings.setContentsMargins(0, 0, 0, 0)
+    settings.setContentsMargins(0, 0, 16, 0)
     settings.setSpacing(14)
     from local_pdf_toolkit.ui.inspector import FormBody, InspectorSection, OptionLabel
 

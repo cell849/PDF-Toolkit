@@ -15,6 +15,22 @@ def settle(app):
         app.processEvents()
 
 
+def test_pending_layout_callbacks_are_cancelled_when_section_is_destroyed(qapp):
+    from PySide6.QtWidgets import QLineEdit
+
+    from local_pdf_toolkit.ui.inspector import FormBody, InspectorSection, OptionLabel
+
+    body = FormBody()
+    body.form.addRow(OptionLabel("Pages", "Select pages"), QLineEdit())
+    section = InspectorSection("Options", body)
+    section.show()
+    section.open()
+    body.resize(200, 100)
+    section.deleteLater()
+    qapp.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    settle(qapp)
+
+
 def test_form_reserves_height_for_tall_information_icon(qapp, monkeypatch):
     from PySide6.QtCore import QSize
     from PySide6.QtWidgets import QLineEdit
@@ -63,7 +79,7 @@ def test_disclosure_moves_following_section_and_tracks_width(qapp):
         ).y()
         assert after > before
         assert section.popup.width() == section.width()
-        assert section.button.arrowType() == Qt.ArrowType.DownArrow
+        assert section.button.property("expanded")
         dpi = window._option_rows["dpi"][0]
         dpi.number.setValue(276)
         assert window._editors["dpi"]() == 276
@@ -77,7 +93,7 @@ def test_disclosure_moves_following_section_and_tracks_width(qapp):
         section.button.click()
         settle(qapp)
         assert not section.popup.isVisible()
-        assert section.button.arrowType() == Qt.ArrowType.RightArrow
+        assert not section.button.property("expanded")
         assert (
             window.output_section.mapTo(
                 window.settings_panel, window.output_section.rect().topLeft()
@@ -201,7 +217,7 @@ def test_all_tool_dropdowns_fit_fields_and_keep_values(qapp, dark, width, scale)
                 section.open()
                 settle(qapp)
                 assert section.popup.isVisible()
-                assert section.button.arrowType() == Qt.ArrowType.DownArrow
+                assert section.button.property("expanded")
                 assert section.popup.width() == section.width()
                 previous_bottom = -1
                 form = section.body.form
@@ -243,7 +259,7 @@ def test_all_tool_dropdowns_fit_fields_and_keep_values(qapp, dark, width, scale)
                 assert {name: get() for name, get in window._editors.items()} == original
                 section.button.click()
                 assert not section.popup.isVisible()
-                assert section.button.arrowType() == Qt.ArrowType.RightArrow
+                assert not section.button.property("expanded")
     finally:
         window.close()
         window.deleteLater()
@@ -262,7 +278,7 @@ def test_sidebar_collapses_to_distinct_accessible_categories_and_restores(qapp):
         assert window.navigation.collapsed and window.sidebar.isVisible()
         assert window.sidebar.width() == 64
         assert not window.sidebar_toggle.property("keyboardFocus")
-        assert window.sidebar_toggle.width() == window.navigation.viewport().width()
+        assert window.sidebar_toggle.width() == 40
         window.navigation.setFocus(Qt.FocusReason.TabFocusReason)
         window.sidebar_toggle.setFocus(Qt.FocusReason.TabFocusReason)
         assert window.sidebar_toggle.property("keyboardFocus")

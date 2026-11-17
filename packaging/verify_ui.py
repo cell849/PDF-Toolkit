@@ -40,6 +40,8 @@ if __name__ == "__main__":
                 "tests/test_control_polish.py",
                 "tests/test_inspector_layout.py",
                 "tests/test_metadata_values.py",
+                "tests/test_sidebar_polish.py",
+                "tests/test_visual_polish.py",
                 "-q",
                 "--timeout=60",
             ],

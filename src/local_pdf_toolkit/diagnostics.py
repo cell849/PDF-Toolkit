@@ -27,7 +27,13 @@ def self_test():
         from local_pdf_toolkit.ui.design import apply_theme
         from local_pdf_toolkit.ui.icons import resource_path
         from local_pdf_toolkit.ui.main_window import MainWindow
+        from local_pdf_toolkit.ui.startup import StartupScreen
 
+        splash = StartupScreen()
+        splash.show()
+        app.processEvents()
+        valid_startup = not splash.grab().isNull()
+        splash.close()
         window = MainWindow(registry)
         window.show()
         app.processEvents()
@@ -59,6 +65,7 @@ def self_test():
         artwork = QPixmap(str(resource_path("chevron-light.svg")))
         valid_ui = (
             valid_library
+            and valid_startup
             and not rendered.isNull()
             and not window.windowIcon().isNull()
             and not artwork.isNull()

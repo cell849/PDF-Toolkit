@@ -1,8 +1,8 @@
 """Original category symbols and a compact, accessible navigation rail."""
 
-from PySide6.QtCore import QEvent, QRectF, QSize, Qt, Signal
-from PySide6.QtGui import QIcon, QPainter, QPainterPath, QPalette, QPen, QPixmap
-from PySide6.QtWidgets import QListWidget, QPushButton, QStyledItemDelegate, QStyleOptionViewItem
+from PySide6.QtCore import QEvent, QRect, QRectF, QSize, Qt, Signal
+from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPalette, QPen, QPixmap
+from PySide6.QtWidgets import QListWidget, QPushButton, QStyle, QStyledItemDelegate
 
 
 class SidebarToggle(QPushButton):
@@ -83,12 +83,40 @@ def category_icon(index, color):
 
 
 class _NavigationDelegate(QStyledItemDelegate):
-    def initStyleOption(self, option: QStyleOptionViewItem, index):
-        super().initStyleOption(option, index)
-        if self.parent().collapsed:
-            option.text = ""
-            option.decorationPosition = QStyleOptionViewItem.Position.Top
-            option.decorationAlignment = Qt.AlignmentFlag.AlignCenter
+    def icon_rect(self, option):
+        # Keep the icon cell fixed as selection, hover, and focus change.
+        side = 40
+        x = option.rect.center().x() - side // 2 if self.parent().collapsed else option.rect.left()
+        return QRect(x, option.rect.center().y() - side // 2, side, side)
+
+    def paint(self, painter, option, index):
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        cell = self.icon_rect(option)
+        selected = bool(option.state & QStyle.StateFlag.State_Selected)
+        hovered = bool(option.state & QStyle.StateFlag.State_MouseOver)
+        if selected or hovered:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(option.palette.color(QPalette.ColorRole.Highlight))
+            painter.drawRoundedRect(QRectF(cell), 8, 8)
+        if option.state & QStyle.StateFlag.State_HasFocus:
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.setPen(QPen(option.palette.color(QPalette.ColorRole.Link), 2))
+            painter.drawRoundedRect(QRectF(cell.adjusted(1, 1, -1, -1)), 7, 7)
+        accent = self.parent().window().property("themeAccent")
+        color = (
+            QColor(accent) if selected and accent else option.palette.color(QPalette.ColorRole.Text)
+        )
+        category_icon(index.row(), color).paint(painter, cell, Qt.AlignmentFlag.AlignCenter)
+        if not self.parent().collapsed:
+            painter.setPen(color)
+            label = option.rect.adjusted(52, 0, -4, 0)
+            painter.drawText(
+                label,
+                Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                index.data(Qt.ItemDataRole.DisplayRole),
+            )
+        painter.restore()
 
 
 class CategoryNavigation(QListWidget):
@@ -98,13 +126,28 @@ class CategoryNavigation(QListWidget):
         super().__init__()
         self.collapsed = False
         self.previous_row = -1
+        self.double_activation = False
         self.setIconSize(QSize(24, 24))
         self.setItemDelegate(_NavigationDelegate(self))
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
     def mousePressEvent(self, event):
+        self.double_activation = False
         self.previous_row = self.currentRow()
         super().mousePressEvent(event)
+
+    def mouseDoubleClickEvent(self, event):
+        item = self.itemAt(event.position().toPoint())
+        if item is not None and event.button() == Qt.MouseButton.LeftButton:
+            self.double_activation = True
+            self.activate_requested.emit(item.text())
+            event.accept()
+            return
+        super().mouseDoubleClickEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        super().mouseReleaseEvent(event)
+        self.double_activation = False
 
     def keyPressEvent(self, event):
         if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space):
@@ -120,7 +163,7 @@ class CategoryNavigation(QListWidget):
             item.setIcon(category_icon(index, self.palette().color(QPalette.ColorRole.Text)))
             item.setToolTip(item.text())
             item.setData(Qt.ItemDataRole.AccessibleTextRole, item.text())
-            item.setSizeHint(QSize(40, max(42, self.fontMetrics().height() + 16)))
+            item.setSizeHint(QSize(40, max(48, self.fontMetrics().height() + 16)))
 
     def set_collapsed(self, value):
         self.collapsed = value
