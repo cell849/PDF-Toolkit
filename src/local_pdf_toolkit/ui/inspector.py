@@ -80,6 +80,7 @@ class InlineCheckOption(QWidget):
         super().__init__()
         self.setObjectName("inlineControl")
         self.checkbox = checkbox
+        self.checkbox.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.caption = OptionLabel(title, explanation)
         self.row = QBoxLayout(QBoxLayout.Direction.LeftToRight, self)
         self.row.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
