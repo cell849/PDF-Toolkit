@@ -15,6 +15,30 @@ def settle(app):
         app.processEvents()
 
 
+def test_form_reserves_height_for_tall_information_icon(qapp, monkeypatch):
+    from PySide6.QtCore import QSize
+    from PySide6.QtWidgets import QLineEdit
+
+    from local_pdf_toolkit.ui.inspector import FormBody, OptionLabel
+
+    body = FormBody()
+    label = OptionLabel("Page order", "Information")
+    label.help.setMinimumHeight(70)
+    monkeypatch.setattr(label.help, "sizeHint", lambda: QSize(70, 70))
+    assert label.heightForWidth(300) >= 70
+    field = QLineEdit()
+    body.form.addRow(label, field)
+    body.resize(300, 160)
+    body.show()
+    try:
+        body.measure()
+        settle(qapp)
+        assert label.heightForWidth(label.width()) >= label.help.sizeHint().height()
+        assert field.geometry().top() > label.geometry().bottom()
+    finally:
+        body.close()
+
+
 def test_disclosure_moves_following_section_and_tracks_width(qapp):
     window = MainWindow(build_registry())
     window.resize(1380, 860)

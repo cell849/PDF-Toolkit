@@ -40,6 +40,18 @@ class OptionLabel(QLabel):
         self.help.setAccessibleName(f"About {title}")
         self.setContentsMargins(0, 0, 30, 0)
 
+    def heightForWidth(self, width):
+        height = super().heightForWidth(width)
+        if hasattr(self, "help"):
+            height = max(height, self.help.sizeHint().height())
+        return height
+
+    def minimumSizeHint(self):
+        size = super().minimumSizeHint()
+        if hasattr(self, "help"):
+            size.setHeight(max(size.height(), self.help.sizeHint().height()))
+        return size
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
         size = max(22, self.help.sizeHint().height())
