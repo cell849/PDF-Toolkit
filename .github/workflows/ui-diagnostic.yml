@@ -1,6 +1,7 @@
 name: Temporary Windows layout diagnostic
 on:
-  workflow_dispatch:
+  push:
+    branches: [release/v0.8.3]
 jobs:
   layout:
     runs-on: windows-latest
