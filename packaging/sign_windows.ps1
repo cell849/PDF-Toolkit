@@ -60,7 +60,7 @@ try {
         }
     }
     $directory = Split-Path $AppPath -Parent
-    $publicCertificate = Join-Path $directory 'LocalPDFToolkit-signing.cer'
+    $publicCertificate = Join-Path $directory 'PDFToolkit-signing.cer'
     $null = Export-Certificate -Cert $certificate -FilePath $publicCertificate -Type CERT
     $verifier = Join-Path $PSScriptRoot 'verify_windows_signature.ps1'
     & $verifier -AppPath $AppPath -CertificatePath $publicCertificate -SigningMode $SigningMode

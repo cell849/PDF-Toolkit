@@ -5,9 +5,55 @@ from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPalette, QPen,
 from PySide6.QtWidgets import QListWidget, QPushButton, QStyle, QStyledItemDelegate
 
 
-class SidebarToggle(QPushButton):
-    def __init__(self, text):
+class ChevronButton(QPushButton):
+    """A text button with a small, rounded directional symbol."""
+
+    def __init__(self, text="", direction="left"):
         super().__init__(text)
+        self._direction = direction
+        self.setIconSize(QSize(16, 16))
+        self._update_icon()
+
+    def set_direction(self, direction):
+        self._direction = direction
+        self._update_icon()
+
+    def _update_icon(self):
+        pixmap = QPixmap(16, 16)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(
+            QPen(
+                self.palette().color(QPalette.ColorRole.ButtonText),
+                1.8,
+                Qt.PenStyle.SolidLine,
+                Qt.PenCapStyle.RoundCap,
+                Qt.PenJoinStyle.RoundJoin,
+            )
+        )
+        path = QPainterPath()
+        if self._direction == "left":
+            path.moveTo(10, 3)
+            path.lineTo(5, 8)
+            path.lineTo(10, 13)
+        else:
+            path.moveTo(6, 3)
+            path.lineTo(11, 8)
+            path.lineTo(6, 13)
+        painter.drawPath(path)
+        painter.end()
+        self.setIcon(QIcon(pixmap))
+
+    def changeEvent(self, event):
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.PaletteChange and hasattr(self, "_direction"):
+            self._update_icon()
+
+
+class SidebarToggle(ChevronButton):
+    def __init__(self):
+        super().__init__()
         self.setMinimumHeight(40)
 
     def _keyboard_focus(self, value):
@@ -100,12 +146,13 @@ class _NavigationDelegate(QStyledItemDelegate):
         selected = bool(option.state & QStyle.StateFlag.State_Selected)
         hovered = bool(option.state & QStyle.StateFlag.State_MouseOver)
         if selected or hovered:
-            painter.setPen(QPen(QColor("#9bc9f5"), 1) if selected else Qt.PenStyle.NoPen)
+            painter.setPen(QPen(QColor("#9bc9f5"), 1))
             painter.setBrush(option.palette.color(QPalette.ColorRole.Highlight))
             painter.drawRoundedRect(QRectF(cell.adjusted(1, 1, -1, -1)), 8, 8)
         if option.state & QStyle.StateFlag.State_HasFocus:
             painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.setPen(QPen(option.palette.color(QPalette.ColorRole.Link), 2))
+            accent = self.parent().window().property("themeAccent") or "#90c2ff"
+            painter.setPen(QPen(QColor(accent), 2))
             painter.drawRoundedRect(QRectF(cell.adjusted(1, 1, -1, -1)), 7, 7)
         text_color = option.palette.color(QPalette.ColorRole.Text)
         if selected:

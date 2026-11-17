@@ -1,6 +1,6 @@
 param(
-    [string]$AppPath = (Join-Path $PSScriptRoot 'LocalPDFToolkit.exe'),
-    [string]$CertificatePath = (Join-Path $PSScriptRoot 'LocalPDFToolkit-signing.cer'),
+    [string]$AppPath = (Join-Path $PSScriptRoot 'PDFToolkit.exe'),
+    [string]$CertificatePath = (Join-Path $PSScriptRoot 'PDFToolkit-signing.cer'),
     [ValidateSet('self-signed', 'trusted')][string]$SigningMode = 'self-signed'
 )
 $ErrorActionPreference = 'Stop'

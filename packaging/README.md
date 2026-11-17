@@ -23,7 +23,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1
 
 This process-scoped execution policy does not change the machine policy.
 The script builds an onedir executable, runs its real spawned-worker self-test,
-and creates `dist/LocalPDFToolkit-Windows-x64.zip`. It does not publish anything.
+and creates `dist/PDFToolkit.zip`. It does not publish anything.
 It requires a 64-bit Python 3.13 environment and fails the self-test gate after
 60 seconds rather than waiting indefinitely. The Actions workflow creates the
 same `.venv` used by the local build script and runs lint, formatting and tests
@@ -32,7 +32,7 @@ GitHub Actions `Windows package` can also be run manually once this repository
 is placed on GitHub. The successful run above is the recorded verification.
 
 Extract the entire archive; keep `_internal` beside the executable. Launch
-`LocalPDFToolkit.exe`. Python is bundled; LibreOffice is not. For Office → PDF,
+`PDFToolkit.exe`. Python is bundled; LibreOffice is not. For Office → PDF,
 install LibreOffice locally; other supported tools operate without it.
 
 The archive is a portable folder, not an MSI/installer or update service.
@@ -60,7 +60,7 @@ See THIRD_PARTY.md before any redistribution.
 
 ## Simplified download
 
-Use https://github.com/cell849/tools/releases/latest and select the Windows ZIP
+Use https://github.com/cell849/PDF-Toolkit/releases/latest and select the Windows ZIP
 under Assets. Release assets are the app ZIP itself, so extraction is needed
 only once. The source-code archives automatically listed by GitHub are not the app.
 The private repository still requires GitHub sign-in.
@@ -104,13 +104,13 @@ created for each run, then its certificate and private key are removed in a
 and do not provide a persistent publisher identity. No signing secret is required.
 Self-signed signatures are not timestamped; they expire with their certificate.
 
-Every signed ZIP includes `LocalPDFToolkit-signing.cer`, `SIGNATURE.txt` (public
+Every signed ZIP includes `PDFToolkit-signing.cer`, `SIGNATURE.txt` (public
 certificate SHA-256 fingerprint and SHA-1 thumbprint identifier), and
 `Verify-Signature.ps1`. Inspect the script, then from the extracted app folder run:
 
 ```powershell
 powershell -NoProfile -File .\Verify-Signature.ps1
-Get-FileHash .\LocalPDFToolkit-signing.cer -Algorithm SHA256
+Get-FileHash .\PDFToolkit-signing.cer -Algorithm SHA256
 ```
 
 The verifier checks the PKCS#7 signature cryptographically, matches the signer to

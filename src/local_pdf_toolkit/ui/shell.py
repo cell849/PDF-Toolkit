@@ -383,9 +383,9 @@ def build_window(w):
     sidebar_header = QHBoxLayout()
     w.sidebar_brand = label("PDF Toolkit", "section")
     sidebar_header.addWidget(w.sidebar_brand, 1)
-    from local_pdf_toolkit.ui.sidebar import CategoryNavigation, SidebarToggle
+    from local_pdf_toolkit.ui.sidebar import CategoryNavigation, ChevronButton, SidebarToggle
 
-    w.sidebar_toggle = SidebarToggle("‹")
+    w.sidebar_toggle = SidebarToggle()
     w.sidebar_toggle.setObjectName("sidebarToggle")
     w.sidebar_toggle.clicked.connect(lambda: w._set_sidebar_collapsed(not w.navigation.collapsed))
     w.sidebar_toggle.setAccessibleName("Collapse sidebar")
@@ -405,7 +405,9 @@ def build_window(w):
     outer.setSpacing(16)
     bar = QHBoxLayout()
     bar.setContentsMargins(0, 0, 22, 0)
-    w.back_button = button("‹  All tools", w._show_library)
+    w.back_button = ChevronButton("Home")
+    w.back_button.setCursor(Qt.CursorShape.PointingHandCursor)
+    w.back_button.clicked.connect(w._show_library)
     w.back_button.setMinimumHeight(36)
     bar.addWidget(w.back_button)
     w.library_title = label("All tools", "title")
@@ -737,7 +739,7 @@ def sync_workspace(w):
     )
     w.progress.setVisible(active and w._active)
     w.settings_toggle.setVisible(active)
-    w.back_button.setText("‹  Home" if active else "Tool library")
+    w.back_button.setText("Home" if active else "Tool library")
 
 
 def add_menus(w):

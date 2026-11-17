@@ -2,10 +2,10 @@
 
 ![Desktop tool library](docs/interface-light.png)
 
-**[Download the Windows app](https://github.com/cell849/tools/releases/latest)**
+**[Download the Windows app](https://github.com/cell849/PDF-Toolkit/releases/latest)**
 
-On the release page, expand **Assets** and download **LocalPDFToolkit-Windows-x64.zip**.
-Extract it once, open the LocalPDFToolkit folder, and launch LocalPDFToolkit.exe.
+On the release page, expand **Assets** and download **PDFToolkit.zip**.
+Extract it once, open the PDFToolkit folder, and launch PDFToolkit.exe.
 Keep `_internal` beside it. GitHub sign-in is required for this private repository.
 The automatically listed “Source code” ZIP is for development.
 
@@ -132,8 +132,10 @@ resolved dependency set; contributors with uv can use `uv sync --extra dev
 uv lock. The Windows packaging workflow builds a portable desktop app ZIP;
 Python package builds are also available for development.
 
-The project's code is available under the [MIT License](LICENSE). Dependencies
-have their own licenses; see [third-party notices](packaging/THIRD_PARTY.md).
+The project's own code is available under the [MIT License](LICENSE). The app
+uses PyMuPDF under AGPL-3.0, so the combined app has AGPL obligations when
+distributed. Other dependencies have their own terms; see
+[third-party notices](packaging/THIRD_PARTY.md).
 
 ## Confirmed decisions
 

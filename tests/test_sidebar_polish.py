@@ -1,9 +1,31 @@
-from PySide6.QtCore import QEvent
+from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QStyleOptionViewItem
 
 from local_pdf_toolkit.ui.design import DARK, LIGHT, apply_theme
 from local_pdf_toolkit.ui.sidebar import CategoryNavigation
+
+
+def test_navigation_chevrons_follow_sidebar_state_and_home(qapp):
+    from local_pdf_toolkit.app import build_registry
+    from local_pdf_toolkit.ui.main_window import MainWindow
+
+    window = MainWindow(build_registry())
+    try:
+        window.show()
+        window._set_sidebar_collapsed(False, remember=False)
+        left = window.sidebar_toggle.icon().pixmap(16, 16).toImage()
+        window._set_sidebar_collapsed(True, remember=False)
+        right = window.sidebar_toggle.icon().pixmap(16, 16).toImage()
+        assert left != right
+        assert not window.back_button.icon().isNull()
+        assert window.sidebar_toggle.accessibleName() == "Expand sidebar"
+        window._select_tool(0)
+        assert window.back_button.text() == "Home"
+    finally:
+        window.close()
+        window.deleteLater()
+        qapp.sendPostedEvents(None, QEvent.Type.DeferredDelete)
 
 
 def test_navigation_cells_stay_aligned_across_selection_and_collapse(qapp):
@@ -73,6 +95,14 @@ def test_selected_icon_and_cell_border_in_real_window(qapp):
         ]
         assert any(p.red() > 220 and 130 < p.green() < 200 and p.blue() < 120 for p in pixels)
         assert any(p.red() >= 100 and p.green() >= 150 and p.blue() >= 210 for p in pixels)
+        nav.setFocus(Qt.FocusReason.TabFocusReason)
+        qapp.processEvents()
+        focused = nav.viewport().grab().toImage()
+        option = QStyleOptionViewItem()
+        option.rect = rect
+        cell = nav.itemDelegate().icon_rect(option)
+        edge = focused.pixelColor(round(cell.center().x() * ratio), round((cell.top() + 1) * ratio))
+        assert edge.blue() > edge.red(), edge.name()
     finally:
         window.close()
         window.deleteLater()

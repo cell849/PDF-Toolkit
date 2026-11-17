@@ -123,7 +123,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         self.sidebar.setMinimumWidth(64 if collapsed else expanded_width)
         self.sidebar.setMaximumWidth(64 if collapsed else expanded_width + 20)
         self.sidebar_toggle.setFixedWidth(40)
-        self.sidebar_toggle.setText("›" if collapsed else "‹")
+        self.sidebar_toggle.set_direction("right" if collapsed else "left")
         description = "Expand sidebar" if collapsed else "Collapse sidebar"
         self.sidebar_toggle.setAccessibleName(description)
         self.sidebar_toggle.setToolTip(description + " (Ctrl+B)")
