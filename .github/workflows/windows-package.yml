@@ -48,6 +48,11 @@ jobs:
           QT_QPA_PLATFORM: windows
           QT_SCALE_FACTOR: '1.5'
         run: ./.venv/Scripts/python.exe packaging/verify_ui.py
+      - name: Capture native inspector and size-unit menu
+        env:
+          QT_QPA_PLATFORM: windows
+          QT_SCALE_FACTOR: '1.5'
+        run: ./.venv/Scripts/python.exe packaging/capture_inspector.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:

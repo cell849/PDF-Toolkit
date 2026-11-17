@@ -80,7 +80,7 @@ def main() -> int:
 
     app.setWindowIcon(app_icon())
     app.setApplicationName("Local PDF Toolkit")
-    app.setApplicationVersion("0.8.1")
+    app.setApplicationVersion("0.8.2")
     window = MainWindow(build_registry())
     window.show()
     return app.exec()

@@ -89,7 +89,7 @@ class ChoiceBox(_DeliberateWheel, QComboBox):
         self.view().setStyleSheet(f"""
             QListView {{ background: {base}; color: {text}; border: 0; padding: 4px;
                 outline: none; font-size: {self.font().pointSizeF()}pt; }}
-            QListView::item {{ padding: 6px 10px; border-radius: 6px; }}
+            QListView::item {{ padding: 6px 10px; border-radius: 6px; color: {text}; }}
             QListView::item:selected, QListView::item:hover {{
                 background: {selected}; color: {text}; }}
         """)

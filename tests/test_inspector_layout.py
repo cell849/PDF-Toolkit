@@ -1,7 +1,7 @@
 """Settings must be reachable without clipped fields or scrolling the inspector rail."""
 
 import pytest
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QEvent, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QComboBox
 
@@ -13,6 +13,45 @@ from local_pdf_toolkit.ui.main_window import MainWindow
 def settle(app):
     for _ in range(6):
         app.processEvents()
+
+
+def test_unit_menu_text_remains_readable_after_theme_changes(qapp):
+    window = MainWindow(build_registry())
+    window.resize(1380, 860)
+    window.show()
+    try:
+        for dark in (False, True, False):
+            apply_theme(window, dark)
+            window._select_tool(
+                next(
+                    i
+                    for i, spec in enumerate(window._operations)
+                    if spec.operation_id == "pdf.compress"
+                )
+            )
+            window.options_section.open()
+            settle(qapp)
+            choice = window._option_rows["target_value"][0].unit
+            choice.setCurrentIndex(2)
+            choice.showPopup()
+            settle(qapp)
+            view = choice.view()
+            rect = view.visualRect(view.model().index(0, 0))
+            image = view.viewport().grab().toImage()
+            ratio = image.devicePixelRatio()
+            pixels = [
+                image.pixelColor(x, y).lightness()
+                for x in range(int((rect.left() + 5) * ratio), int((rect.left() + 45) * ratio))
+                for y in range(int((rect.top() + 4) * ratio), int((rect.bottom() - 4) * ratio))
+            ]
+            assert max(pixels) > 160 if dark else min(pixels) < 100
+            choice.hidePopup()
+            window.options_section.close()
+    finally:
+        window.close()
+        window.deleteLater()
+        qapp.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        settle(qapp)
 
 
 @pytest.mark.parametrize(
