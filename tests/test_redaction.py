@@ -79,6 +79,7 @@ def test_factory_and_defaults():
     assert converter.spec.input_formats == converter.spec.output_formats == (FileFormat.PDF,)
     assert converter.validate_options({"regions": marks()})["dpi"] == 150
     assert converter.validate_options({"regions": marks()})["source_sha256"] == ""
+    assert converter.validate_options({"regions": marks(), "dpi": 276})["dpi"] == 276
 
 
 @pytest.mark.parametrize("digest", [None, False, 123, "a" * 63, "a" * 65, "A" * 64, "g" * 64])
@@ -201,7 +202,7 @@ def test_cancellation_during_snapshot_discards_copy(private_pdf, tmp_path, monke
     assert list(tmp_path.iterdir()) == [private_pdf]
 
 
-@pytest.mark.parametrize("dpi", [72, 150, 300])
+@pytest.mark.parametrize("dpi", [72, 150, 276, 300])
 def test_multiple_marks_on_multiple_pages_and_edge_padding(private_pdf, tmp_path, dpi):
     regions = json.dumps(
         [
@@ -327,7 +328,7 @@ def test_normalized_marks_use_displayed_rotation_and_crop(tmp_path, rotation):
         {"regions": marks(x1="0.5")},
         {"regions": marks(extra="unrecognized")},
         {"regions": marks(), "dpi": True},
-        {"regions": marks(), "dpi": 96},
+        {"regions": marks(), "dpi": 71},
         {"regions": marks(), "unknown": True},
     ],
 )

@@ -1,8 +1,25 @@
 """Original category symbols and a compact, accessible navigation rail."""
 
-from PySide6.QtCore import QEvent, QRectF, QSize, Qt
+from PySide6.QtCore import QEvent, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QIcon, QPainter, QPainterPath, QPalette, QPen, QPixmap
-from PySide6.QtWidgets import QListWidget, QStyledItemDelegate, QStyleOptionViewItem
+from PySide6.QtWidgets import QListWidget, QPushButton, QStyledItemDelegate, QStyleOptionViewItem
+
+
+class SidebarToggle(QPushButton):
+    def _keyboard_focus(self, value):
+        self.setProperty("keyboardFocus", value)
+        self.style().unpolish(self)
+        self.style().polish(self)
+
+    def mousePressEvent(self, event):
+        self._keyboard_focus(False)
+        super().mousePressEvent(event)
+
+    def focusInEvent(self, event):
+        self._keyboard_focus(
+            event.reason() in (Qt.FocusReason.TabFocusReason, Qt.FocusReason.BacktabFocusReason)
+        )
+        super().focusInEvent(event)
 
 
 def category_icon(index, color):
@@ -75,12 +92,27 @@ class _NavigationDelegate(QStyledItemDelegate):
 
 
 class CategoryNavigation(QListWidget):
+    activate_requested = Signal(str)
+
     def __init__(self):
         super().__init__()
         self.collapsed = False
+        self.previous_row = -1
         self.setIconSize(QSize(24, 24))
         self.setItemDelegate(_NavigationDelegate(self))
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+    def mousePressEvent(self, event):
+        self.previous_row = self.currentRow()
+        super().mousePressEvent(event)
+
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space):
+            if self.currentItem() is not None:
+                self.activate_requested.emit(self.currentItem().text())
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
     def refresh_icons(self):
         for index in range(self.count()):
@@ -92,6 +124,9 @@ class CategoryNavigation(QListWidget):
 
     def set_collapsed(self, value):
         self.collapsed = value
+        self.setProperty("compact", value)
+        self.style().unpolish(self)
+        self.style().polish(self)
         self.refresh_icons()
         self.viewport().update()
 

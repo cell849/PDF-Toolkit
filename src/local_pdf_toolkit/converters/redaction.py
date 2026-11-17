@@ -149,7 +149,7 @@ class PdfRedactionConverter:
                 "bounds on the displayed page, including its rotation and crop.",
             ),
             OptionDefinition(
-                "dpi", "Page resolution (DPI)", 150, "Raster resolution.", (72, 150, 300)
+                "dpi", "Page resolution (DPI)", 150, "Raster resolution.", minimum=72, maximum=600
             ),
             OptionDefinition(
                 "source_sha256",
@@ -175,9 +175,11 @@ class PdfRedactionConverter:
         if (
             set(options) - {"dpi", "regions", "source_sha256"}
             or type(dpi) is not int
-            or dpi not in (72, 150, 300)
+            or not 72 <= dpi <= 600
         ):
-            raise ConversionError(ErrorCode.INVALID_OPTIONS, "Choose 72, 150 or 300 DPI.")
+            raise ConversionError(
+                ErrorCode.INVALID_OPTIONS, "Choose a resolution from 72 to 600 DPI."
+            )
         source_sha256 = options.get("source_sha256", "")
         if type(source_sha256) is not str or (
             source_sha256 and re.fullmatch(r"[0-9a-f]{64}", source_sha256) is None

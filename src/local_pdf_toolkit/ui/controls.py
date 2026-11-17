@@ -1,6 +1,6 @@
 """Exact keyboard entry and deliberate wheel interaction for conversion options."""
 
-from PySide6.QtCore import QPoint, QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QEvent, QPoint, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QPainterPath, QPalette, QRegion
 from PySide6.QtWidgets import (
     QAbstractSpinBox,
@@ -71,6 +71,15 @@ class ChoiceBox(_DeliberateWheel, QComboBox):
         self.view().setStyle(self._popup_style)
         self.view().setUniformItemSizes(True)
         self.view().window().setObjectName("choicePopup")
+        self.currentIndexChanged.connect(self._fit_current_text)
+
+    def _fit_current_text(self, *_):
+        self.setMinimumWidth(self.fontMetrics().horizontalAdvance(self.currentText()) + 44)
+
+    def changeEvent(self, event):
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.FontChange:
+            self._fit_current_text()
 
     def showPopup(self):
         # The private popup is a separate window; it does not reliably inherit

@@ -496,6 +496,37 @@ def test_home_categories_search_and_all_tools_are_reachable(workspace):
     )
 
 
+def test_all_tools_icon_toggles_library_and_category_overview(workspace, qapp):
+    workspace._show_library()
+    navigation = workspace.navigation
+    item = navigation.item(0)
+    point = navigation.visualItemRect(item).center()
+    QTest.mouseClick(navigation.viewport(), Qt.MouseButton.LeftButton, pos=point)
+    assert workspace.home_views.currentIndex() == 1
+    qapp.processEvents()
+    scrollbar = workspace.library_scroll.verticalScrollBar()
+    assert scrollbar.isVisible()
+    last_card = workspace.library.grid.itemAtPosition(0, workspace.library.columns - 1).widget()
+    right = last_card.mapTo(workspace.library_scroll.viewport(), last_card.rect().topRight()).x()
+    assert workspace.library_scroll.viewport().width() - right >= 16
+    QTest.mouseClick(navigation.viewport(), Qt.MouseButton.LeftButton, pos=point)
+    assert workspace.home_views.currentIndex() == 0
+    QTest.keyClick(navigation, Qt.Key.Key_Return)
+    assert workspace.home_views.currentIndex() == 1
+    QTest.keyClick(navigation, Qt.Key.Key_Return)
+    assert workspace.home_views.currentIndex() == 0
+    grid = workspace.category_buttons["Convert PDFs"].parentWidget().layout()
+    assert [grid.getItemPosition(i)[:2] for i in range(7)] == [
+        (0, 0),
+        (0, 1),
+        (0, 2),
+        (1, 0),
+        (1, 1),
+        (1, 2),
+        (2, 0),
+    ]
+
+
 def test_batch_filters_preserve_input_mapping_and_failed_retry(workspace, fixture_dir, tmp_path):
     choose(workspace, "pdf.to_png")
     invalid = tmp_path / "broken.pdf"

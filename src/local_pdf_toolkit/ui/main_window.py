@@ -72,6 +72,27 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         self._filter_tools(self.search.text())
         self.pages.setCurrentWidget(self.dashboard)
 
+    def _sidebar_clicked(self, item):
+        if (
+            item.text() == "All tools"
+            and self.navigation.previous_row == 0
+            and self.pages.currentWidget() == self.dashboard
+            and not self._overview
+        ):
+            self._show_library()
+        else:
+            self._browse_tools(item.text())
+
+    def _sidebar_activated(self, name):
+        if (
+            name == "All tools"
+            and self.pages.currentWidget() == self.dashboard
+            and not self._overview
+        ):
+            self._show_library()
+        else:
+            self._browse_tools(name)
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
         compact = self.width() < 980
@@ -97,6 +118,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         )
         self.sidebar.setMinimumWidth(64 if collapsed else expanded_width)
         self.sidebar.setMaximumWidth(64 if collapsed else expanded_width + 20)
+        self.sidebar_toggle.setFixedWidth(36 if collapsed else 40)
         self.sidebar_toggle.setText("›" if collapsed else "‹")
         description = "Expand sidebar" if collapsed else "Collapse sidebar"
         self.sidebar_toggle.setAccessibleName(description)
@@ -160,6 +182,27 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
             self.result_open.setVisible(bool(selected) and not self._active)
             self.result_open.setEnabled(bool(selected) and not self._active)
             self.result_open.setText("View report" if selected and not outputs else "Open result")
+            self.result_metadata.setVisible(
+                self._tool_id == "metadata.inspect" and bool(selected) and not self._active
+            )
+
+    def _open_metadata_values(self):
+        if self._active or self._tool_id != "metadata.inspect":
+            return
+        selected = self.files.currentRow()
+        report = self._results.get(selected, ())
+        if not report:
+            return
+        paths = [
+            self._paths[index]
+            for index in sorted(self._results)
+            if index < len(self._paths) and self._results[index] == report
+        ]
+        from local_pdf_toolkit.ui.metadata_values import MetadataValuesDialog
+
+        dialog = MetadataValuesDialog(paths, self)
+        dialog.exec()
+        dialog.deleteLater()
 
     def _open_report(self):
         import json
@@ -280,7 +323,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
             return
         spec = self._operations[index]
         privacy = spec.operation_id.startswith("metadata.")
-        self.options_heading.setText("Options")
+        self.options_heading.setText("  Options")
         self.report_button.setVisible(
             privacy or spec.operation_id in ("pdf.redact", "document.details")
         )
@@ -313,7 +356,8 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
             self.tool_hint.setText("")
             if spec.operation_id == "metadata.inspect":
                 self.tool_hint.setText(
-                    "Inspect one file, or compare original then cleaned copy. Values stay masked."
+                    "Inspect one file or compare two. View values locally; "
+                    "saved reports are masked."
                 )
         self.tool_hint.setVisible(bool(self.tool_hint.text()))
         for option in spec.options:
@@ -482,9 +526,11 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
             display_label = option.label.replace(" (px, 0 = original)", " (px)").replace(
                 " (0 = no target)", ""
             )
+            if option.name == "allow_downscale":
+                display_label = "Allow smaller dimensions"
             if option.name in ("width", "height"):
                 widget.setSpecialValueText("Original")
-            from local_pdf_toolkit.ui.inspector import OptionLabel
+            from local_pdf_toolkit.ui.inspector import InlineCheckOption, OptionLabel
 
             explanation = help_text or option.description
             if option.name == "target_value":
@@ -492,10 +538,15 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                     " 0 disables the target. KB/MB use 1000; KiB/MiB use 1024. "
                     "Percent means bytes to keep."
                 )
-            label = OptionLabel(display_label, explanation)
             widget.setToolTip("")
-            target_form.addRow(label, widget)
-            self._option_rows[option.name] = (widget, label)
+            if option.name == "allow_downscale":
+                widget = InlineCheckOption(widget, display_label, explanation)
+                target_form.addRow(widget)
+                self._option_rows[option.name] = (widget, widget)
+            else:
+                label = OptionLabel(display_label, explanation)
+                target_form.addRow(label, widget)
+                self._option_rows[option.name] = (widget, label)
             controls = (
                 [widget]
                 if isinstance(widget, SliderNumber)

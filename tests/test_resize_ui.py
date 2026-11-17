@@ -61,6 +61,7 @@ def test_paired_target_size_accepts_fractional_units_and_explains_percent(qapp):
         assert not any(
             "KiB, 0" in window.form.itemAt(row, window.form.ItemRole.LabelRole).widget().text()
             for row in range(window.form.rowCount())
+            if window.form.itemAt(row, window.form.ItemRole.LabelRole) is not None
         )
         target.unit.setCurrentIndex(target.unit.findData("percent"))
         target.amount.setValue(25)

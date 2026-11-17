@@ -1,14 +1,15 @@
-"""Anchored, content-sized settings sections; the inspector rail never scrolls."""
+"""Responsive, inline settings sections for the inspector rail."""
 
-from PySide6.QtCore import QEvent, QPoint, Qt, QTimer
+from PySide6.QtCore import QEvent, Qt, QTimer
+from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
-    QComboBox,
+    QBoxLayout,
     QFormLayout,
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLayout,
     QLineEdit,
-    QScrollArea,
     QSizePolicy,
     QToolButton,
     QVBoxLayout,
@@ -45,6 +46,42 @@ class OptionLabel(QLabel):
         if self.contentsMargins().right() != size + 6:
             self.setContentsMargins(0, 0, size + 6, 0)
         self.help.setGeometry(max(0, self.width() - size), 0, size, size)
+
+
+class InlineCheckOption(QWidget):
+    """Keep a checkbox and explanation together, including at narrow widths."""
+
+    def __init__(self, checkbox, title, explanation):
+        super().__init__()
+        self.setObjectName("inlineControl")
+        self.checkbox = checkbox
+        self.caption = OptionLabel(title, explanation)
+        self.row = QBoxLayout(QBoxLayout.Direction.LeftToRight, self)
+        self.row.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
+        self.row.setContentsMargins(0, 0, 0, 0)
+        self.row.setSpacing(8)
+        self.row.addWidget(checkbox)
+        self.row.addWidget(self.caption, 1)
+
+    def prepare_layout(self, width):
+        minimum = (
+            self.checkbox.sizeHint().width()
+            + self.caption.fontMetrics().horizontalAdvance(self.caption.text())
+            + self.caption.help.sizeHint().width()
+            + 20
+        )
+        direction = (
+            QBoxLayout.Direction.TopToBottom
+            if width < minimum
+            else QBoxLayout.Direction.LeftToRight
+        )
+        if self.row.direction() != direction:
+            self.row.setDirection(direction)
+            self.updateGeometry()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.prepare_layout(self.width())
 
 
 class FormBody(QWidget):
@@ -98,49 +135,40 @@ class FormBody(QWidget):
             QTimer.singleShot(0, self.measure)
 
 
-class _Popup(QFrame):
-    def __init__(self, owner):
-        super().__init__(owner, Qt.WindowType.Popup)
-        self.owner = owner
-        self.setObjectName("inspectorPopup")
-
-    def hideEvent(self, event):
-        super().hideEvent(event)
-        self.owner.button.blockSignals(True)
-        self.owner.button.setChecked(False)
-        self.owner.button.blockSignals(False)
-
-
 class InspectorSection(QWidget):
     def __init__(self, title, body, parent=None):
         super().__init__(parent)
         self.body = body
-        layout = QHBoxLayout(self)
+        layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(6)
+        header = QHBoxLayout()
+        header.setContentsMargins(0, 0, 0, 0)
+        header.setSpacing(6)
         self.button = QToolButton()
         self.button.setObjectName("inspectorDropdown")
-        self.button.setText(title)
+        self.button.setText("  " + title)
         self.button.setCheckable(True)
-        self.button.setArrowType(Qt.ArrowType.DownArrow)
+        self.button.setArrowType(Qt.ArrowType.RightArrow)
         self.button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.button.setAccessibleName(title)
         self.help = InfoButton("")
         self.help.hide()
-        layout.addWidget(self.button, 1)
-        layout.addWidget(self.help)
-        self.popup = _Popup(self)
+        header.addWidget(self.button, 1)
+        header.addWidget(self.help)
+        layout.addLayout(header)
+        self.popup = QFrame(self)
+        self.popup.setObjectName("inspectorPopup")
         popup_layout = QVBoxLayout(self.popup)
         popup_layout.setContentsMargins(14, 14, 14, 14)
-        self.scroll = QScrollArea()
-        self.scroll.setObjectName("inspectorScroll")
-        self.scroll.viewport().setObjectName("inspectorViewport")
-        self.scroll.setWidgetResizable(True)
-        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.scroll.setWidget(body)
-        popup_layout.addWidget(self.scroll)
+        popup_layout.addWidget(body)
+        layout.addWidget(self.popup)
+        self.popup.hide()
         self.button.toggled.connect(self._toggle)
+        shortcut = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
+        shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        shortcut.activated.connect(self.close)
 
     def open(self):
         if self.button.isEnabled():
@@ -150,40 +178,14 @@ class InspectorSection(QWidget):
                 self.button.setChecked(True)
 
     def close(self):
-        self.popup.hide()
+        self.button.setChecked(False)
 
     def _toggle(self, checked):
-        if not checked:
-            self.popup.hide()
-            return
-        was_visible = self.popup.isVisible()
-        screen = self.screen().availableGeometry()
-        preferred = 340
-        for choice in self.body.findChildren(QComboBox):
-            metrics = choice.fontMetrics()
-            preferred = max(
-                preferred,
-                max(
-                    (metrics.horizontalAdvance(choice.itemText(i)) for i in range(choice.count())),
-                    default=0,
-                )
-                + 90,
-            )
-        preferred = max(preferred, self.body.minimumSizeHint().width() + 44)
-        width = min(preferred, screen.width() - 24)
-        self.body.resize(width - 44, self.body.height())
+        self.button.setArrowType(Qt.ArrowType.DownArrow if checked else Qt.ArrowType.RightArrow)
+        self.popup.setVisible(checked)
+        if checked:
+            QTimer.singleShot(0, self.refresh)
+
+    def refresh(self):
         if isinstance(self.body, FormBody):
             self.body.measure()
-        self.body.layout().activate()
-        desired = max(self.body.minimumHeight(), self.body.sizeHint().height()) + 32
-        height = min(desired, screen.height() - 40)
-        self.popup.resize(width, height)
-        point = self.button.mapToGlobal(QPoint(0, self.button.height() + 4))
-        x = min(max(screen.left() + 8, point.x()), screen.right() - width - 8)
-        y = min(max(screen.top() + 8, point.y()), screen.bottom() - height - 8)
-        self.popup.move(x, y)
-        self.popup.show()
-        if isinstance(self.body, FormBody):
-            QTimer.singleShot(0, self.body.measure)
-        if not was_visible:
-            self.body.setFocus(Qt.FocusReason.PopupFocusReason)

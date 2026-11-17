@@ -15,6 +15,56 @@ def settle(app):
         app.processEvents()
 
 
+def test_disclosure_moves_following_section_and_tracks_width(qapp):
+    window = MainWindow(build_registry())
+    window.resize(1380, 860)
+    window.show()
+    try:
+        window._select_tool(
+            next(
+                i
+                for i, spec in enumerate(window._operations)
+                if spec.operation_id == "metadata.clean_pdf"
+            )
+        )
+        settle(qapp)
+        section = window.options_section
+        before = window.output_section.mapTo(
+            window.settings_panel, window.output_section.rect().topLeft()
+        ).y()
+        section.button.click()
+        settle(qapp)
+        after = window.output_section.mapTo(
+            window.settings_panel, window.output_section.rect().topLeft()
+        ).y()
+        assert after > before
+        assert section.popup.width() == section.width()
+        assert section.button.arrowType() == Qt.ArrowType.DownArrow
+        dpi = window._option_rows["dpi"][0]
+        dpi.number.setValue(276)
+        assert window._editors["dpi"]() == 276
+        old_width = section.width()
+        window.workspace_splitter.setSizes([180, 350, 600])
+        settle(qapp)
+        assert section.width() > old_width
+        assert section.popup.width() == section.width()
+        section.button.click()
+        settle(qapp)
+        assert not section.popup.isVisible()
+        assert section.button.arrowType() == Qt.ArrowType.RightArrow
+        assert (
+            window.output_section.mapTo(
+                window.settings_panel, window.output_section.rect().topLeft()
+            ).y()
+            == before
+        )
+    finally:
+        window.close()
+        window.deleteLater()
+        qapp.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        settle(qapp)
+
+
 def test_unit_menu_text_remains_readable_after_theme_changes(qapp):
     window = MainWindow(build_registry())
     window.resize(1380, 860)
@@ -125,12 +175,20 @@ def test_all_tool_dropdowns_fit_fields_and_keep_values(qapp, dark, width, scale)
                 section.open()
                 settle(qapp)
                 assert section.popup.isVisible()
-                assert section.scroll.horizontalScrollBar().maximum() == 0
+                assert section.button.arrowType() == Qt.ArrowType.DownArrow
+                assert section.popup.width() == section.width()
                 previous_bottom = -1
                 form = section.body.form
                 for row in range(form.rowCount()):
-                    caption = form.itemAt(row, form.ItemRole.LabelRole).widget()
+                    label_item = form.itemAt(row, form.ItemRole.LabelRole)
                     field = form.itemAt(row, form.ItemRole.FieldRole).widget()
+                    if label_item is None:
+                        if not field.isHidden():
+                            assert field.geometry().top() > previous_bottom
+                            assert section.body.rect().contains(field.geometry())
+                            previous_bottom = field.geometry().bottom()
+                        continue
+                    caption = label_item.widget()
                     if field.isHidden():
                         assert caption.isHidden()
                         continue
@@ -152,8 +210,9 @@ def test_all_tool_dropdowns_fit_fields_and_keep_values(qapp, dark, width, scale)
                         )
                     previous_bottom = field.geometry().bottom()
                 assert {name: get() for name, get in window._editors.items()} == original
-                QTest.keyClick(section.popup, Qt.Key.Key_Escape)
+                section.button.click()
                 assert not section.popup.isVisible()
+                assert section.button.arrowType() == Qt.ArrowType.RightArrow
     finally:
         window.close()
         window.deleteLater()
@@ -167,10 +226,15 @@ def test_sidebar_collapses_to_distinct_accessible_categories_and_restores(qapp):
     try:
         window._set_sidebar_collapsed(False, remember=False)
         names = [window.navigation.item(i).text() for i in range(window.navigation.count())]
-        window.sidebar_toggle.click()
+        QTest.mouseClick(window.sidebar_toggle, Qt.MouseButton.LeftButton)
         settle(qapp)
         assert window.navigation.collapsed and window.sidebar.isVisible()
         assert window.sidebar.width() == 64
+        assert not window.sidebar_toggle.property("keyboardFocus")
+        assert window.sidebar_toggle.width() == window.navigation.viewport().width()
+        window.navigation.setFocus(Qt.FocusReason.TabFocusReason)
+        window.sidebar_toggle.setFocus(Qt.FocusReason.TabFocusReason)
+        assert window.sidebar_toggle.property("keyboardFocus")
         assert [window.navigation.item(i).text() for i in range(window.navigation.count())] == names
         assert all(not window.navigation.item(i).icon().isNull() for i in range(len(names)))
         images = [

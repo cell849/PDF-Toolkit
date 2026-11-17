@@ -274,6 +274,7 @@ class MetadataInspector:
         limitations=(
             "Select one file to inspect, or two in order: original first, cleaned copy second. "
             "Reports contain detected field counts and categories, never original field values.",
+            "Audio/video inspection requires locally installed FFmpeg and ffprobe. "
             "Detection is format-specific, not exhaustive forensic analysis. A zero count "
             "does not prove anonymity; visible/hidden content and unknown metadata may remain.",
         ),

@@ -76,8 +76,14 @@ def test_library_cards_categories_and_compact_workspace(qapp):
             QTest.qWait(50)
             previous_bottom = -1
             for row in range(window.form.rowCount()):
-                label = window.form.itemAt(row, window.form.ItemRole.LabelRole).widget()
+                label_item = window.form.itemAt(row, window.form.ItemRole.LabelRole)
                 field = window.form.itemAt(row, window.form.ItemRole.FieldRole).widget()
+                if label_item is None:
+                    if not field.isHidden():
+                        assert field.geometry().top() > previous_bottom
+                        previous_bottom = field.geometry().bottom()
+                    continue
+                label = label_item.widget()
                 if field.isHidden():
                     assert label.isHidden()
                     continue
@@ -152,7 +158,7 @@ def test_privacy_tools_share_native_workspace_and_report(qapp, tmp_path):
         window.output_section.open()
         qapp.processEvents()
         assert window.report_button.isVisible()
-        assert window.options_heading.text() == "Options"
+        assert window.options_heading.text().strip() == "Options"
         assert window.notice.accessibleDescription()
         report = tmp_path / "clean.report.json"
         report.write_text(

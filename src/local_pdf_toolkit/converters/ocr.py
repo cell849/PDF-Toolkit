@@ -139,7 +139,14 @@ class OcrConverter:
                 OptionDefinition(
                     "language", "OCR language", "eng", "Installed language codes, e.g. eng+fra."
                 ),
-                OptionDefinition("dpi", "Resolution (DPI)", 150, "OCR resolution.", (150, 300)),
+                OptionDefinition(
+                    "dpi",
+                    "Resolution (DPI)",
+                    150,
+                    "OCR resolution in DPI (72–600); 150 and 300 are common presets.",
+                    minimum=72,
+                    maximum=600,
+                ),
                 OptionDefinition(
                     "timeout",
                     "Timeout per page (seconds)",
@@ -184,9 +191,9 @@ class OcrConverter:
         for name, item in definitions.items():
             if type(values[name]) is not type(item.default):
                 raise ConversionError(ErrorCode.INVALID_OPTIONS, f"Invalid {item.label}.")
-        if values["dpi"] not in (150, 300):
+        if not 72 <= values["dpi"] <= 600:
             raise ConversionError(
-                ErrorCode.INVALID_OPTIONS, "OCR resolution must be 150 or 300 DPI."
+                ErrorCode.INVALID_OPTIONS, "OCR resolution must be an integer from 72 to 600 DPI."
             )
         if not 5 <= values["timeout"] <= 120:
             raise ConversionError(ErrorCode.INVALID_OPTIONS, "OCR timeout must be 5–120 seconds.")

@@ -115,6 +115,8 @@ def apply_theme(window, dark=None):
         QPushButton:pressed {{ background: {selection}; border-color: {accent}; }}
         QPushButton:focus, QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus,
         QComboBox:focus {{ border: 2px solid {accent}; }}
+        QPushButton#sidebarToggle:focus {{ border: 1px solid {border}; }}
+        QPushButton#sidebarToggle[keyboardFocus="true"]:focus {{ border: 2px solid {accent}; }}
         QPushButton#primary {{ background: {accent}; color: {primary_text};
             border-color: {accent}; font-weight: 650; padding: 10px 18px;
         }}
@@ -164,6 +166,8 @@ def apply_theme(window, dark=None):
         QListWidget::item:hover, QListView::item:hover {{ background: {selection}; }}
         QListWidget::item:focus {{ border: 1px solid {accent}; }}
         QListWidget#navigation {{ background: transparent; border: 0; }}
+        QListWidget#navigation[compact="true"] {{ padding: 0; }}
+        QListWidget#navigation[compact="true"]::item {{ padding: 0; margin: 3px 0; }}
         QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {{ background: {surface};
             color: {text}; border: 1px solid {border}; border-radius: 7px;
             padding: 6px 8px; min-height: 20px; selection-background-color: {selection};

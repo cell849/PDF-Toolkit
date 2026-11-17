@@ -435,6 +435,10 @@ class WorkspaceBehavior:
                 self._update_summary()
                 return
         self.preview_button.setText("Names" if rename else "Preview")
+        result_tab = self._tool_id != "metadata.inspect"
+        if not result_tab and self.document_preview.tabs.currentIndex() == 1:
+            self.document_preview.tabs.setCurrentIndex(0)
+        self.document_preview.tabs.setTabVisible(1, result_tab)
         if rename and self._rename_preview is None:
             from local_pdf_toolkit.ui.rename_preview import RenamePreview
 
@@ -696,7 +700,7 @@ class WorkspaceBehavior:
         self._update_summary()
         for section in (self.options_section, self.advanced_section):
             if section.popup.isVisible():
-                section._toggle(True)
+                section.refresh()
 
     def _update_summary(self):
         if not self._ux_ready:
@@ -1014,7 +1018,7 @@ class WorkspaceBehavior:
                 else self.output_section
             )
             section.open()
-            section.scroll.ensureWidgetVisible(editor)
+            self.settings_scroll.ensureWidgetVisible(editor)
             editor.setFocus()
             editor.selectAll()
         else:

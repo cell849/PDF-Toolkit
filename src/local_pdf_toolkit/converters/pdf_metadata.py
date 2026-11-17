@@ -26,7 +26,8 @@ class PdfMetadataConverter:
                 "Page resolution (DPI)",
                 150,
                 "Rebuilds pages as images. Use 72 DPI for unusually large pages.",
-                (72, 150, 300),
+                minimum=72,
+                maximum=600,
             ),
         ),
         (
@@ -44,8 +45,10 @@ class PdfMetadataConverter:
 
     def validate_options(self, options):
         dpi = options.get("dpi", 150)
-        if set(options) - {"dpi"} or type(dpi) is not int or dpi not in (72, 150, 300):
-            raise ConversionError(ErrorCode.INVALID_OPTIONS, "Choose 72, 150 or 300 DPI.")
+        if set(options) - {"dpi"} or type(dpi) is not int or not 72 <= dpi <= 600:
+            raise ConversionError(
+                ErrorCode.INVALID_OPTIONS, "Choose a resolution from 72 to 600 DPI."
+            )
         return {"dpi": dpi}
 
     def convert(self, input_path, output_dir, options, progress, cancel_token):

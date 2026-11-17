@@ -69,7 +69,9 @@ def test_capability_and_defaults():
         {"language": "a" * 129},
         {"language": 1},
         {"dpi": True},
-        {"dpi": 72},
+        {"dpi": 71},
+        {"dpi": 601},
+        {"dpi": 276.0},
         {"timeout": 4},
         {"timeout": 121},
         {"timeout": 5.0},
@@ -81,6 +83,15 @@ def test_invalid_options(options):
     with pytest.raises(ConversionError) as error:
         ocr.OcrConverter().validate_options(options)
     assert error.value.code == ErrorCode.INVALID_OPTIONS
+
+
+@pytest.mark.parametrize("dpi", [72, 150, 276, 300, 600])
+def test_valid_dpi_range(dpi):
+    converter = ocr.OcrConverter()
+    definition = next(option for option in converter.spec.options if option.name == "dpi")
+    assert (definition.minimum, definition.maximum) == (72, 600)
+    assert not definition.choices
+    assert converter.validate_options({"dpi": dpi})["dpi"] == dpi
 
 
 def test_missing_engine_is_actionable(scanned_pdf, tmp_path, monkeypatch):
@@ -114,7 +125,7 @@ def test_missing_language_pack_is_actionable(scanned_pdf, tmp_path, engine):
     assert list(tmp_path.iterdir()) == [scanned_pdf]
 
 
-@pytest.mark.parametrize("dpi", [150, 300])
+@pytest.mark.parametrize("dpi", [150, 276, 300])
 @pytest.mark.parametrize("user_unit", [1, 2])
 def test_real_ocr_searchable_geometry_and_original(scanned_pdf, tmp_path, engine, dpi, user_unit):
     if user_unit != 1:

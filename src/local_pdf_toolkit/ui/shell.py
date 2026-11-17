@@ -114,7 +114,7 @@ def tool_description(spec):
         "pdf.to_docx": "Export selectable text into editable paragraphs",
         "pdf.to_xlsx": "Export detected tables into a spreadsheet",
         "pdf.to_pptx": "Export pages as image slides",
-        "metadata.inspect": "Compare detected fields without revealing private values",
+        "metadata.inspect": "Inspect metadata and compare cleaned files",
         "metadata.neutral_text": "Make a neutral-name copy; text contents remain",
     }
     if spec.operation_id in descriptions:
@@ -197,7 +197,7 @@ class ToolLibrary(QWidget):
         self.cards = []
         self.grid = QGridLayout(self)
         self.grid.setSizeConstraint(QLayout.SizeConstraint.SetMinAndMaxSize)
-        self.grid.setContentsMargins(0, 0, 0, 0)
+        self.grid.setContentsMargins(0, 0, 16, 0)
         self.grid.setSpacing(14)
         self.grid.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.columns = 0
@@ -283,6 +283,44 @@ class ToolLibrary(QWidget):
             self.reflow()
 
 
+class CategoryOverview(QWidget):
+    """Show three columns when possible, reducing them for larger text or narrow windows."""
+
+    def __init__(self, window):
+        super().__init__()
+        self.grid = QGridLayout(self)
+        self.grid.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
+        self.grid.setContentsMargins(0, 0, 0, 0)
+        self.grid.setSpacing(14)
+        self.grid.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.buttons = {}
+        for name in CATEGORIES[1:]:
+            card = button(name, lambda checked=False, n=name: window._browse_tools(n))
+            card.setMinimumHeight(64)
+            card.setAccessibleName(f"Browse {name}")
+            self.buttons[name] = card
+        self.browse = button("Browse all tools", lambda: window._browse_tools("All tools"))
+        self.columns = 0
+        self.reflow()
+
+    def reflow(self):
+        minimum = max(160, *(card.sizeHint().width() for card in self.buttons.values()))
+        columns = max(1, min(3, (self.width() + 14) // (minimum + 14)))
+        if columns == self.columns:
+            return
+        self.columns = columns
+        while self.grid.count():
+            self.grid.takeAt(0)
+        for index, card in enumerate(self.buttons.values()):
+            self.grid.addWidget(card, index // columns, index % columns)
+        rows = (len(self.buttons) + columns - 1) // columns
+        self.grid.addWidget(self.browse, rows, 0, 1, columns)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.reflow()
+
+
 def build_window(w):
     w.resize(1380, 860)
     w.setMinimumSize(760, 620)
@@ -307,12 +345,14 @@ def build_window(w):
     sidebar_header = QHBoxLayout()
     w.sidebar_brand = label("PDF Toolkit", "section")
     sidebar_header.addWidget(w.sidebar_brand, 1)
-    w.sidebar_toggle = button("‹", lambda: w._set_sidebar_collapsed(not w.navigation.collapsed))
-    w.sidebar_toggle.setAccessibleName("Collapse sidebar")
-    sidebar_header.addWidget(w.sidebar_toggle)
-    side.addLayout(sidebar_header)
-    from local_pdf_toolkit.ui.sidebar import CategoryNavigation
+    from local_pdf_toolkit.ui.sidebar import CategoryNavigation, SidebarToggle
 
+    w.sidebar_toggle = SidebarToggle("‹")
+    w.sidebar_toggle.setObjectName("sidebarToggle")
+    w.sidebar_toggle.clicked.connect(lambda: w._set_sidebar_collapsed(not w.navigation.collapsed))
+    w.sidebar_toggle.setAccessibleName("Collapse sidebar")
+    sidebar_header.addWidget(w.sidebar_toggle, alignment=Qt.AlignmentFlag.AlignHCenter)
+    side.addLayout(sidebar_header)
     w.navigation = CategoryNavigation()
     w.navigation.setObjectName("navigation")
     w.navigation.setAccessibleName("Tool categories")
@@ -354,23 +394,12 @@ def build_window(w):
     w.library_count = label(f"{len(w._operations)} tools · Choose one to get started", "eyebrow")
     home.addWidget(w.library_count)
     w.home_views = QStackedWidget()
-    overview = QWidget()
-    categories = QGridLayout(overview)
-    categories.setContentsMargins(0, 0, 0, 0)
-    categories.setSpacing(14)
-    categories.setAlignment(Qt.AlignmentFlag.AlignTop)
-    w.category_buttons = {}
-    for index, name in enumerate(CATEGORIES[1:]):
-        card = button(name, lambda checked=False, n=name: w._browse_tools(n))
-        card.setMinimumHeight(64)
-        card.setAccessibleName(f"Browse {name}")
-        categories.addWidget(card, index // 2, index % 2)
-        w.category_buttons[name] = card
-    browse = button("Browse all tools", lambda: w._browse_tools("All tools"))
-    categories.addWidget(browse, 4, 0, 1, 2)
+    overview = CategoryOverview(w)
+    w.category_buttons = overview.buttons
     w.home_views.addWidget(overview)
     w.library = ToolLibrary(w)
     library_scroll = QScrollArea()
+    w.library_scroll = library_scroll
     library_scroll.setWidgetResizable(True)
     library_scroll.setWidget(w.library)
     w.home_views.addWidget(library_scroll)
@@ -567,7 +596,15 @@ def build_window(w):
     w.retry_button = w.result_retry
 
     w.result_adjust = button("Adjust options", w._adjust_settings)
-    for control in (w.result_open, w.result_compare, w.result_retry, w.result_adjust):
+    w.result_metadata = button("View metadata", w._open_metadata_values)
+    w.result_metadata.hide()
+    for control in (
+        w.result_open,
+        w.result_metadata,
+        w.result_compare,
+        w.result_retry,
+        w.result_adjust,
+    ):
         result_actions.addWidget(control)
     result_actions.addStretch()
     result_layout.addLayout(result_actions)
@@ -612,7 +649,8 @@ def build_window(w):
     w.drop_overlay.hide()
     w.search.textChanged.connect(w._filter_tools)
     w.navigation.currentRowChanged.connect(w._category_changed)
-    w.navigation.itemClicked.connect(lambda item: w._browse_tools(item.text()))
+    w.navigation.itemClicked.connect(w._sidebar_clicked)
+    w.navigation.activate_requested.connect(w._sidebar_activated)
     w.navigation.setCurrentRow(0)
     w.operation_list.currentRowChanged.connect(w._options)
     w.operation_list.setCurrentRow(0 if w._operations else -1)

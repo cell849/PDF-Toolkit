@@ -55,3 +55,13 @@ def test_pdf_cancel_discards_all_outputs(private_pdf, tmp_path):
 def test_invalid_options_rejected():
     with pytest.raises(ConversionError):
         PdfMetadataConverter().validate_options({"dpi": True})
+
+
+def test_custom_dpi_is_used_for_flattening(private_pdf, tmp_path):
+    result, report = PdfMetadataConverter().convert(
+        private_pdf, tmp_path, {"dpi": 276}, lambda _: None, CancellationToken()
+    )
+    assert json.loads(report.read_text())["dpi"] == 276
+    with pymupdf.open(result) as document:
+        image = document[0].get_images()[0]
+        assert image[2:4] == (552, 552)
