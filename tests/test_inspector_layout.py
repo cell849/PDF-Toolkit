@@ -164,6 +164,7 @@ def test_sidebar_collapses_to_distinct_accessible_categories_and_restores(qapp):
     window.resize(1380, 860)
     window.show()
     try:
+        window._set_sidebar_collapsed(False, remember=False)
         names = [window.navigation.item(i).text() for i in range(window.navigation.count())]
         window.sidebar_toggle.click()
         settle(qapp)
