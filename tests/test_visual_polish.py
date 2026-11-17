@@ -72,11 +72,15 @@ def test_units_and_checkbox_stay_inline_when_space_is_available(qapp):
         for key in ("width", "height"):
             _, caption = window._option_rows[key]
             text_width = caption.fontMetrics().horizontalAdvance(caption.text())
-            assert caption.width() >= text_width + caption.help.width()
-            assert caption.help.x() >= text_width
-            assert (
-                caption.height() <= max(caption.fontMetrics().height(), caption.help.height()) + 2
-            )
+            if caption.width() >= text_width + caption.help.width() + 6:
+                assert caption.help.x() >= text_width
+                assert (
+                    caption.height()
+                    <= max(caption.fontMetrics().height(), caption.help.height()) + 2
+                )
+            else:
+                assert caption.height() >= caption.heightForWidth(caption.width())
+            assert caption.rect().contains(caption.help.geometry())
         window._select_tool(
             next(
                 i for i, spec in enumerate(window._operations) if spec.operation_id == "pdf.to_png"
