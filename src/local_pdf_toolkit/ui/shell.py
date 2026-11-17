@@ -533,7 +533,8 @@ def build_window(w):
     w.settings_scroll = QScrollArea()
     w.settings_scroll.setWidgetResizable(True)
     w.settings_scroll.setWidget(w.settings_panel)
-    w.settings_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    # On very small windows or with enlarged text, keep every section reachable.
+    w.settings_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
     w.settings_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
     w.settings_scroll.setMinimumWidth(190)
     w.workspace_splitter.addWidget(w.settings_scroll)

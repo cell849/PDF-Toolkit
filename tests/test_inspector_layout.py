@@ -54,6 +54,33 @@ def test_unit_menu_text_remains_readable_after_theme_changes(qapp):
         settle(qapp)
 
 
+def test_inspector_sections_stay_reachable_when_height_is_constrained(qapp):
+    window = MainWindow(build_registry())
+    window.show()
+    try:
+        window._select_tool(
+            next(
+                i for i, spec in enumerate(window._operations) if spec.operation_id == "pdf.compare"
+            )
+        )
+        window.settings_scroll.setFixedHeight(80)
+        settle(qapp)
+        rail = window.settings_scroll
+        assert rail.verticalScrollBar().maximum() > 0
+        assert rail.verticalScrollBar().isVisible()
+        rail.ensureWidgetVisible(window.output_section)
+        settle(qapp)
+        bottom = window.output_section.mapTo(
+            rail.viewport(), window.output_section.rect().bottomLeft()
+        )
+        assert rail.viewport().rect().contains(bottom)
+    finally:
+        window.close()
+        window.deleteLater()
+        qapp.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        settle(qapp)
+
+
 @pytest.mark.parametrize(
     "dark,width,scale", [(False, 1380, 100), (True, 760, 100), (False, 760, 200), (True, 1380, 200)]
 )
@@ -78,7 +105,19 @@ def test_all_tool_dropdowns_fit_fields_and_keep_values(qapp, dark, width, scale)
                 target.amount.setValue(60)
             original = {name: getter() for name, getter in window._editors.items()}
             settle(qapp)
-            assert window.settings_scroll.verticalScrollBar().maximum() == 0, spec.operation_id
+            rail = window.settings_scroll
+            scrollbar = rail.verticalScrollBar()
+            if scale == 100:
+                assert scrollbar.maximum() == 0, spec.operation_id
+            elif scrollbar.maximum():
+                assert scrollbar.isVisible(), spec.operation_id
+                rail.ensureWidgetVisible(window.output_section)
+                settle(qapp)
+                bottom = window.output_section.mapTo(
+                    rail.viewport(), window.output_section.rect().bottomLeft()
+                )
+                assert rail.viewport().rect().contains(bottom), spec.operation_id
+                scrollbar.setValue(0)
             for section in (window.options_section, window.advanced_section):
                 if section.isHidden() or not section.button.isEnabled():
                     continue
