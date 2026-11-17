@@ -10,7 +10,7 @@ Keep `_internal` beside it. GitHub sign-in is required for this private reposito
 The automatically listed “Source code” ZIP is for development.
 
 
-A Windows 11-first, personal-use desktop application for fully local PDF and
+A Windows 11-first desktop application for fully local PDF and
 image tools. Local tools cover PDF/image conversion, PDF page operations,
 compression, metadata cleaning and optional Office conversion. See CAPABILITIES.md for exact support
 and fidelity limits. Drag-and-drop, options, progress and cancellation are included.
@@ -132,18 +132,14 @@ resolved dependency set; contributors with uv can use `uv sync --extra dev
 uv lock. The Windows packaging workflow builds a portable desktop app ZIP;
 Python package builds are also available for development.
 
-No distribution license has been selected. Keep this project for personal use
-until that decision and dependency-license review are complete. PyMuPDF is
-AGPL/commercial dual-licensed; review its terms before distributing this app.
+The project's code is available under the [MIT License](LICENSE). Dependencies
+have their own licenses; see [third-party notices](packaging/THIRD_PARTY.md).
 
 ## Confirmed decisions
 
 - Target: Windows 11 first.
-- Working name: Local PDF Toolkit.
-- Distribution: personal use.
 - Output policy: originals remain unchanged, user-selected output directory,
   temporary outputs and no unapproved overwrite (implemented in M1).
-- AI policy: one agent by default; no model switching is implied by this repo.
 
 The v0.3 desktop UI uses an Apple-inspired tool library, category sidebar and focused
 workspaces. See docs/DESIGN.md for design decisions and keyboard shortcuts.
