@@ -31,9 +31,11 @@ def test_dpi_accepts_precise_typing_and_only_slider_snaps(qapp):
         control.slider.setValue(298)
         control.slider.setSliderDown(False)
         assert window._editors["dpi"]() == 300
+        assert "300 DPI" in window.summary.text()
         control.slider.setFocus()
         QTest.keyClick(control.slider, Qt.Key.Key_Right)
         assert window._editors["dpi"]() == 301
+        assert "301 DPI" in window.summary.text()
         control.number.selectAll()
         QTest.keyClicks(control.number, "298")
         QTest.keyClick(control.number, Qt.Key.Key_Return)

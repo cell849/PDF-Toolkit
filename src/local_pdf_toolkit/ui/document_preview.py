@@ -163,7 +163,7 @@ class DocumentPreview(QWidget):
         layout.addWidget(self.output)
         self.canvas = PreviewCanvas()
         layout.addWidget(self.canvas, 1)
-        self.empty_message = QLabel("Document preview\nAdd a file to get started.")
+        self.empty_message = QLabel("Add a file to preview")
         self.empty_message.setObjectName("muted")
         self.empty_message.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.empty_message.setWordWrap(True)

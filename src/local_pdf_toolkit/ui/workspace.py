@@ -86,14 +86,21 @@ class WorkspaceBehavior:
                 )
                 size_menu.addAction(action)
         self._set_text_size(int(self._preferences.value("textSize", 100)))
-        self.settings_action.setChecked(self.width() >= 980)
+        stored_sidebar = self._preferences.value("sidebarCollapsed")
+        if stored_sidebar is not None:
+            self._sidebar_user_choice = str(stored_sidebar).lower() == "true"
+        self._set_sidebar_collapsed(
+            self.width() < 980 if self._sidebar_user_choice is None else self._sidebar_user_choice,
+            remember=False,
+        )
+        self.settings_action.setChecked(True)
         self._restore_form_values()
         self._set_result(
             "ready",
             "Ready",
             "Temporary job records found. Use Tools → Review temporary jobs from previous sessions."
             if recovery_hint
-            else "Add a file to get started.",
+            else "",
         )
         self._update_summary()
 
@@ -104,6 +111,7 @@ class WorkspaceBehavior:
         self.setProperty("textScale", value / 100)
         self._preferences.setValue("textSize", value)
         apply_theme(self)
+        self._set_sidebar_collapsed(self.navigation.collapsed, remember=False)
 
     def _current_spec(self):
         index = self.operation_list.currentRow()
@@ -146,11 +154,7 @@ class WorkspaceBehavior:
         if hasattr(self, "_last_config"):
             del self._last_config
         self._rebuild_files()
-        message = (
-            "Choose files supported by this tool."
-            if previous and not paths
-            else "Original files stay unchanged."
-        )
+        message = "Choose files supported by this tool." if previous and not paths else ""
         self._set_result("ready", "Ready", message)
         self._sync_files()
         self._selection_changed()
@@ -453,7 +457,7 @@ class WorkspaceBehavior:
         ready, reason = self._file_ready(path) if path else (False, "")
         if not self._active:
             self.document_preview.empty_message.setText(
-                "Document preview\nAdd a file to get started."
+                "Add a file to preview"
                 if path is None
                 else "Inspecting file…"
                 if ready is None
@@ -690,6 +694,9 @@ class WorkspaceBehavior:
             bool(index in self._results and saved != self._current_values())
         )
         self._update_summary()
+        for section in (self.options_section, self.advanced_section):
+            if section.popup.isVisible():
+                section._toggle(True)
 
     def _update_summary(self):
         if not self._ux_ready:
@@ -700,7 +707,7 @@ class WorkspaceBehavior:
         rename = bool(spec and spec.operation_id == "file.rename_copies")
         if rename and self._rename_preview is not None:
             self._rename_preview.update_plan(self._paths, values)
-        if "width" in values or "height" in values:
+        if values.get("width") or values.get("height"):
             parts.append(
                 f"Fit within {values.get('width') or 'original'} × "
                 f"{values.get('height') or 'original'} px"
@@ -761,6 +768,9 @@ class WorkspaceBehavior:
                 visible = values.get("paper") == "custom"
             editor.setVisible(visible)
             caption.setVisible(visible)
+            if key == "target_value":
+                editor.amount.setToolTip("")
+                editor.unit.setToolTip("")
         if spec and spec.operation_id == "metadata.inspect":
             parts.insert(0, "Inspect one file, or compare original then cleaned copy")
         elif rename:
@@ -774,12 +784,8 @@ class WorkspaceBehavior:
         elif len(self._paths) > 1:
             parts.insert(0, f"Process {len(self._paths)} files separately")
         if not rename and self.output_name.text().strip():
-            parts.append(
-                "Output: "
-                + self.output_name.text().strip()
-                + " · format extension added automatically"
-            )
-        self.summary.setText(" · ".join(parts) or "New copies only. Original files stay unchanged.")
+            parts.append("Output: " + self.output_name.text().strip())
+        self.summary.setText(" · ".join(parts))
         operation = spec.operation_id if spec else ""
         verb = (
             "Save copies"
@@ -1002,11 +1008,17 @@ class WorkspaceBehavior:
                 if self._tool_id == "file.rename_copies"
                 else self.output_name
             )
-            self.settings_scroll.ensureWidgetVisible(editor)
+            section = (
+                self.options_section
+                if self._tool_id == "file.rename_copies"
+                else self.output_section
+            )
+            section.open()
+            section.scroll.ensureWidgetVisible(editor)
             editor.setFocus()
             editor.selectAll()
         else:
-            self.settings_scroll.ensureWidgetVisible(self.options_widget)
+            self.options_section.open()
             self.options_widget.setFocus()
 
     def _file_menu(self, position):
@@ -1055,6 +1067,13 @@ class WorkspaceBehavior:
         self._start()
 
     def _close_workspace(self):
+        from local_pdf_toolkit.ui.controls import InfoButton
+
+        for section in (self.options_section, self.advanced_section, self.output_section):
+            section.close()
+        for info in self.findChildren(InfoButton):
+            if info._popover is not None:
+                info._popover.hide()
         self._requested_start = False
         self._probe_queue.clear()
         if self._probe_jobs.running:

@@ -68,6 +68,8 @@ def test_library_cards_categories_and_compact_workspace(qapp):
         QTest.qWait(80)
         window.settings_action.setChecked(True)
         QTest.qWait(50)
+        window.options_section.open()
+        qapp.processEvents()
         for mode in ("lossless", "rasterized"):
             choice = window._option_rows["mode"][0]
             choice.setCurrentIndex(choice.findData(mode))
@@ -147,8 +149,11 @@ def test_privacy_tools_share_native_workspace_and_report(qapp, tmp_path):
         )
         window.settings_action.setChecked(True)
         qapp.processEvents()
+        window.output_section.open()
+        qapp.processEvents()
         assert window.report_button.isVisible()
-        assert window.options_heading.text() == "Cleaning policy"
+        assert window.options_heading.text() == "Options"
+        assert window.notice.accessibleDescription()
         report = tmp_path / "clean.report.json"
         report.write_text(
             json.dumps(

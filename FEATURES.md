@@ -187,3 +187,12 @@ export preserves originals; PDF comparison highlights corresponding-page raster
 changes and reports bounded text changes without semantic/alignment guarantees.
 No new runtime dependencies. Source safety, cancellation and worker cleanup remain
 release gates; development runs use focused checks and quiet logs.
+
+## Approved local inspector polish (not published)
+
+User requested content-sized settings dropdowns instead of scrolling the inspector,
+info-button explanations/requirements, icon-only collapsible navigation, refined
+sliders and rounded themed choice menus, capitalized display captions, consistent
+spacing and no clipped fields. Retain conversion options, keyboard/exact entry,
+error visibility and offline behavior. Verify all tools in both themes at normal
+and enlarged text. Save a local status report; do not push or publish this work.

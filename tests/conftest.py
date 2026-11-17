@@ -65,7 +65,7 @@ def fixture_dir() -> Path:
 
 
 @pytest.fixture(autouse=True)
-def isolated_desktop_preferences(tmp_path):
+def isolated_desktop_preferences(tmp_path, tmp_path_factory, monkeypatch):
     """Never read or overwrite a developer's real window/unit preferences."""
     from PySide6.QtCore import QSettings
 
@@ -73,6 +73,16 @@ def isolated_desktop_preferences(tmp_path):
     QSettings.setDefaultFormat(QSettings.Format.IniFormat)
     QSettings.setPath(
         QSettings.Format.IniFormat, QSettings.Scope.UserScope, str(tmp_path / "settings")
+    )
+    # The named-organization constructor can still choose NativeFormat. Route
+    # desktop preferences explicitly to this test's INI file, including on Windows.
+    import local_pdf_toolkit.ui.workspace as behavior
+
+    settings_file = tmp_path_factory.mktemp("desktop-preferences") / "Desktop.ini"
+    monkeypatch.setattr(
+        behavior,
+        "QSettings",
+        lambda *_: QSettings(str(settings_file), QSettings.Format.IniFormat),
     )
     yield
     QSettings.setDefaultFormat(previous)

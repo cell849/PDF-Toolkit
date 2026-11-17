@@ -67,6 +67,7 @@ def apply_theme(window, dark=None):
         (QPalette.ColorRole.Highlight, selection),
         (QPalette.ColorRole.HighlightedText, text),
         (QPalette.ColorRole.PlaceholderText, secondary),
+        (QPalette.ColorRole.Mid, border),
         (QPalette.ColorRole.ToolTipBase, surface),
         (QPalette.ColorRole.ToolTipText, text),
     ):
@@ -120,6 +121,24 @@ def apply_theme(window, dark=None):
         QPushButton:disabled {{ color: {secondary}; background: {sidebar};
             border-color: {border};
         }}
+        QToolButton#inspectorDropdown {{ background: {surface}; color: {text};
+            border: 1px solid {border}; border-radius: 9px; padding: 12px;
+            text-align: left; font-weight: 600;
+        }}
+        QToolButton#inspectorDropdown:hover {{ border-color: {accent}; }}
+        QToolButton#inspectorDropdown:focus {{ border: 2px solid {accent}; }}
+        QFrame#inspectorPopup {{ background: {surface}; border: 1px solid {border};
+            border-radius: 10px;
+        }}
+        QToolButton#infoButton {{ background: transparent; color: {secondary};
+            border: 1px solid {secondary}; border-radius: {max(12, round(body_size))}px; padding: 0;
+            min-width: 20px; min-height: 20px; font-weight: 600; }}
+        QToolButton#infoButton:hover {{ color: {accent}; border-color: {accent}; }}
+        QToolButton#infoButton:focus {{ border: 2px solid {accent}; }}
+        QFrame#infoPopover {{ background: {surface}; border: 1px solid {border};
+            border-radius: 8px; }}
+        QFrame#choicePopup {{ background: {surface}; border: 1px solid {border};
+            border-radius: 8px; }}
         QPushButton#disclosure {{ text-align: left; background: transparent;
             border-color: transparent; padding-left: 0; font-weight: 600;
         }}
@@ -158,7 +177,7 @@ def apply_theme(window, dark=None):
         QTabBar::tab:selected {{ background: {selection}; color: {text}; border-color: {accent}; }}
         QTabBar::tab:disabled {{ color: {secondary}; }}
         QComboBox QAbstractItemView {{ background: {surface}; color: {text};
-            border: 1px solid {border}; selection-background-color: {selection};
+            border: 0; border-radius: 7px; padding: 4px; selection-background-color: {selection};
             selection-color: {text}; outline: 0;
         }}
         QCheckBox {{ spacing: 8px; padding: 5px 0; }}
@@ -172,9 +191,9 @@ def apply_theme(window, dark=None):
         QSlider::groove:horizontal {{ height: 4px; background: {border}; border-radius: 2px; }}
         QSlider::sub-page:horizontal {{ background: {accent}; border-radius: 2px; }}
         QSlider::handle:horizontal {{ width: 16px; margin: -6px 0;
-            background: {surface}; border: 1px solid {accent}; border-radius: 8px;
+            background: #f5f5f7; border: 1px solid {border}; border-radius: 8px;
         }}
-        QSlider:focus::handle:horizontal {{ border: 2px solid {accent}; }}
+        QSlider::handle:horizontal:focus {{ border: 2px solid {accent}; }}
         QProgressBar {{ background: {sidebar}; border: 0; border-radius: 3px;
             min-height: 6px; max-height: 6px;
         }}

@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 
 from local_pdf_toolkit.core.jobs import JobController
 from local_pdf_toolkit.core.registry import ConverterRegistry
+from local_pdf_toolkit.ui.controls import SliderNumber
 from local_pdf_toolkit.ui.workspace import WorkspaceBehavior
 
 
@@ -21,6 +22,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
     def __init__(self, registry: ConverterRegistry) -> None:
         super().__init__()
         self._ux_ready = False
+        self._sidebar_user_choice = None
         self.registry = registry
         self.setWindowTitle("Local PDF Toolkit")
         self.resize(1160, 850)
@@ -73,23 +75,38 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         compact = self.width() < 980
-        if hasattr(self, "sidebar") and compact != getattr(self, "_compact", False):
+        if hasattr(self, "sidebar_toggle") and hasattr(self, "sidebar_action"):
+            if self._sidebar_user_choice is None and compact != getattr(self, "_compact", None):
+                self._set_sidebar_collapsed(compact, remember=False)
             self._compact = compact
-            self.sidebar.setVisible(not compact)
-            self.sidebar_action.blockSignals(True)
-            self.sidebar_action.setChecked(not compact)
-            self.sidebar_action.blockSignals(False)
-        if hasattr(self, "form"):
-            from PySide6.QtWidgets import QFormLayout
 
-            policy = (
-                QFormLayout.RowWrapPolicy.WrapAllRows
-                if self.width() < 980
-                else QFormLayout.RowWrapPolicy.WrapAllRows
+    def _set_sidebar_collapsed(self, collapsed, remember=True):
+        if remember:
+            self._sidebar_user_choice = collapsed
+            if hasattr(self, "_preferences"):
+                self._preferences.setValue("sidebarCollapsed", collapsed)
+        self.navigation.set_collapsed(collapsed)
+        self.sidebar_brand.setVisible(not collapsed)
+        expanded_width = max(
+            180,
+            max(
+                self.navigation.fontMetrics().horizontalAdvance(self.navigation.item(i).text())
+                for i in range(self.navigation.count())
             )
-            self.form.setRowWrapPolicy(policy)
-            if hasattr(self, "settings_action") and compact:
-                self.settings_action.setChecked(False)
+            + 64,
+        )
+        self.sidebar.setMinimumWidth(64 if collapsed else expanded_width)
+        self.sidebar.setMaximumWidth(64 if collapsed else expanded_width + 20)
+        self.sidebar_toggle.setText("›" if collapsed else "‹")
+        description = "Expand sidebar" if collapsed else "Collapse sidebar"
+        self.sidebar_toggle.setAccessibleName(description)
+        self.sidebar_toggle.setToolTip(description + " (Ctrl+B)")
+        self.sidebar_action.blockSignals(True)
+        self.sidebar_action.setChecked(not collapsed)
+        self.sidebar_action.blockSignals(False)
+        self.library_splitter.setSizes(
+            [64 if collapsed else expanded_width, max(500, self.width() - expanded_width)]
+        )
 
     def _open_preview(self):
         if self._active:
@@ -245,6 +262,8 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
 
     def _options(self, index):
         self._switch_document_context(index)
+        for section in (self.options_section, self.advanced_section, self.output_section):
+            section.close()
         if hasattr(self, "advanced_form"):
             while self.advanced_form.rowCount():
                 self.advanced_form.removeRow(0)
@@ -254,22 +273,21 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         self._option_rows = {}
         self.start_button.setEnabled(index >= 0 and not self._active)
         if index < 0:
-            self.notice.clear()
+            self.notice.set_help_text("")
+            self.notice.hide()
+            self.options_section.button.setEnabled(False)
+            self.advanced_section.hide()
             return
         spec = self._operations[index]
         privacy = spec.operation_id.startswith("metadata.")
-        self.options_heading.setText(
-            "Cleaning policy" if privacy and not spec.options else "Options"
-        )
+        self.options_heading.setText("Options")
         self.report_button.setVisible(
             privacy or spec.operation_id in ("pdf.redact", "document.details")
         )
         self.report_button.setEnabled(any(self._results.values()))
         self.tool_title.setText(spec.label.replace(" / resize / compress", ""))
         self.tool_hint.setText(
-            "Files are combined in the order below."
-            if spec.input_mode == "multiple"
-            else "Each file is processed separately. Originals stay untouched."
+            "Files use the listed order." if spec.input_mode == "multiple" else ""
         )
         rename = spec.operation_id == "file.rename_copies"
         self.output_name.setEnabled(not rename and not self._active)
@@ -292,14 +310,12 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                 "Create three same-size candidates, then use Compare to inspect each format."
             )
         if privacy:
-            formats = ", ".join(kind.value.upper() for kind in spec.input_formats)
-            self.tool_hint.setText(
-                f"Supported: {formats}. Separate copy and report. Personal content can remain."
-            )
+            self.tool_hint.setText("")
             if spec.operation_id == "metadata.inspect":
                 self.tool_hint.setText(
                     "Inspect one file, or compare original then cleaned copy. Values stay masked."
                 )
+        self.tool_hint.setVisible(bool(self.tool_hint.text()))
         for option in spec.options:
             if spec.operation_id == "pdf.organize_visual" and option.name == "plan":
                 if self._page_organizer is None:
@@ -330,8 +346,6 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
             elif option.name in ("quality", "resize_percent") or (
                 option.name == "dpi" and not option.choices
             ):
-                from local_pdf_toolkit.ui.controls import SliderNumber
-
                 widget = SliderNumber(
                     option.minimum if option.minimum is not None else 1,
                     option.maximum if option.maximum is not None else 1200,
@@ -353,8 +367,15 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                 widget = ChoiceBox()
                 for choice in option.choices:
                     display = {
-                        "lossless": "Lossless — keep text and vectors",
-                        "rasterized": "Rebuild as page images",
+                        "lossless": "Lossless",
+                        "rasterized": "Page images",
+                        "auto": "Auto",
+                        "portrait": "Portrait",
+                        "landscape": "Landscape",
+                        "contain": "Fit whole page",
+                        "cover": "Fill and crop",
+                        "image": "Image dimensions",
+                        "custom": "Custom dimensions",
                     }.get(choice, str(choice))
                     if spec.operation_id == "pdf.normalize_pages" and option.name == "paper":
                         from local_pdf_toolkit.converters.normalize_pages import PAPER_SIZES_MM
@@ -393,7 +414,12 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                 widget.setValue(option.default)
                 getter = widget.value
             else:
-                widget = QLineEdit(str(option.default))
+                if option.name == "pages" and option.default == "all":
+                    from local_pdf_toolkit.ui.inspector import PageRangeEdit
+
+                    widget = PageRangeEdit()
+                else:
+                    widget = QLineEdit(str(option.default))
                 if option.name == "password":
                     widget.setEchoMode(QLineEdit.EchoMode.Password)
                 getter = widget.text
@@ -451,33 +477,52 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
                 )
             if spec.operation_id == "image.compare_formats":
                 basic.add("quality")
+            basic.add("page_size")
             target_form = self.form if rename or option.name in basic else self.advanced_form
             display_label = option.label.replace(" (px, 0 = original)", " (px)").replace(
                 " (0 = no target)", ""
             )
             if option.name in ("width", "height"):
                 widget.setSpecialValueText("Original")
-            target_form.addRow(display_label, widget)
-            label = target_form.itemAt(
-                target_form.rowCount() - 1, target_form.ItemRole.LabelRole
-            ).widget()
-            label.setWordWrap(True)
+            from local_pdf_toolkit.ui.inspector import OptionLabel
+
+            explanation = help_text or option.description
+            if option.name == "target_value":
+                explanation += (
+                    " 0 disables the target. KB/MB use 1000; KiB/MiB use 1024. "
+                    "Percent means bytes to keep."
+                )
+            label = OptionLabel(display_label, explanation)
+            widget.setToolTip("")
+            target_form.addRow(label, widget)
             self._option_rows[option.name] = (widget, label)
-            for child in [
-                widget,
-                *widget.findChildren(QLineEdit),
-                *widget.findChildren(QSpinBox),
-                *widget.findChildren(QDoubleSpinBox),
-                *widget.findChildren(QComboBox),
-                *widget.findChildren(QCheckBox),
-            ]:
+            controls = (
+                [widget]
+                if isinstance(widget, SliderNumber)
+                else [
+                    widget,
+                    *widget.findChildren(QLineEdit),
+                    *widget.findChildren(QSpinBox),
+                    *widget.findChildren(QDoubleSpinBox),
+                    *widget.findChildren(QComboBox),
+                    *widget.findChildren(QCheckBox),
+                ]
+            )
+            for child in controls:
                 for signal in ("valueChanged", "currentIndexChanged", "textEdited", "toggled"):
                     if hasattr(child, signal):
                         getattr(child, signal).connect(self._settings_changed)
                         break
             self._editors[option.name] = getter
-        self.notice.setText(" ".join(spec.limitations))
-        self.advanced_toggle.setVisible(self.advanced_form.rowCount() > 0)
+        if not self.form.rowCount():
+            while self.advanced_form.rowCount():
+                row = self.advanced_form.takeRow(0)
+                self.form.addRow(row.labelItem.widget(), row.fieldItem.widget())
+        self.notice.set_help_text(" ".join(spec.limitations))
+        self.notice.setAccessibleName("Tool requirements and limitations")
+        self.notice.setVisible(bool(spec.limitations))
+        self.options_section.button.setEnabled(self.form.rowCount() > 0)
+        self.advanced_section.setVisible(self.advanced_form.rowCount() > 0)
         self._restore_form_values()
         self._update_summary()
         self._selection_changed()
@@ -594,6 +639,9 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
 
     def _set_active(self, active):
         self._active = active
+        if active:
+            for section in (self.options_section, self.advanced_section, self.output_section):
+                section.close()
         self.progress.setVisible(active and self.pages.currentWidget() == self.workspace)
         if self._ux_ready:
             self.document_preview.set_busy(active)
@@ -604,6 +652,10 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
             self.clear_button,
             self.operation_list,
             self.options_widget,
+            self.advanced_widget,
+            self.options_section,
+            self.advanced_section,
+            self.output_section,
             self.destination,
             self.output_name,
             self.browse,
