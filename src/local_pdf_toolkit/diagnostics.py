@@ -30,7 +30,12 @@ def self_test():
 
         window = MainWindow(registry)
         window.show()
-        valid_library = True
+        app.processEvents()
+        valid_library = window.home_views.currentIndex() == 0 and all(
+            button.isVisible() for button in window.category_buttons.values()
+        )
+        # The full grid is now intentionally behind Browse all tools.
+        window._browse_tools("All tools")
         for dark in (False, True):
             apply_theme(window, dark)
             for _ in range(8):
