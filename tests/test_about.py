@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QPushButton
 
@@ -39,6 +41,6 @@ def test_packaged_about_finds_license_next_to_executable(tmp_path, monkeypatch):
     (tmp_path / "LICENSE.txt").write_text("license")
     monkeypatch.setattr(about.sys, "frozen", True, raising=False)
     monkeypatch.setattr(about.sys, "executable", str(tmp_path / "PDFToolkit.exe"))
-    assert about._document_url("LICENSE", "LICENSE.txt").toLocalFile() == str(
+    assert Path(about._document_url("LICENSE", "LICENSE.txt").toLocalFile()) == (
         tmp_path / "LICENSE.txt"
     )
