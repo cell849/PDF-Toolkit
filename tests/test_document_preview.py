@@ -310,7 +310,11 @@ def test_busy_resume_waits_for_cancelled_worker_exit(preview, tmp_path):
 
 def test_media_has_clear_preview_explanation(preview, tmp_path):
     preview.set_document(tmp_path / "audio.mp3")
-    QTest.qWait(180)
+    deadline = time.monotonic() + 3
+    while "Audio and video previews are unavailable" not in preview.feedback.text():
+        if time.monotonic() >= deadline:
+            break
+        QTest.qWait(20)
     assert not preview.jobs.started
     assert "Audio and video previews are unavailable" in preview.feedback.text()
 
