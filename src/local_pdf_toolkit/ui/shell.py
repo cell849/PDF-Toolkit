@@ -753,6 +753,15 @@ def sync_workspace(w):
 def add_menus(w):
     file_menu = w.menuBar().addMenu("&File")
     w.file_menu = file_menu
+    from local_pdf_toolkit.ui.start_menu import add_shortcut, available
+
+    w.start_menu_action = QAction("Add to Start menu…", w)
+    w.start_menu_action.setEnabled(available())
+    if not available():
+        w.start_menu_action.setToolTip("Available in the Windows app download")
+    w.start_menu_action.triggered.connect(lambda: add_shortcut(w))
+    file_menu.addAction(w.start_menu_action)
+    file_menu.addSeparator()
     tools_menu = w.menuBar().addMenu("&Tools")
     w.tools_menu = tools_menu
     view_menu = w.menuBar().addMenu("&View")

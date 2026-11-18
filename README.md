@@ -9,6 +9,10 @@ Extract it once, open the PDFToolkit folder, and launch PDFToolkit.exe.
 Keep `_internal` beside it. GitHub sign-in is required for this private repository.
 The automatically listed “Source code” ZIP is for development.
 
+To make the portable app easier to find, choose **File → Add to Start menu…**
+in the Windows app. This creates a shortcut only when requested and does not
+replace an existing shortcut. If you move the app folder, recreate the shortcut.
+
 
 A Windows 11-first desktop application for fully local PDF and
 image tools. Local tools cover PDF/image conversion, PDF page operations,
