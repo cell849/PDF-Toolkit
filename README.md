@@ -1,166 +1,86 @@
-# Local PDF Toolkit
+# PDF Toolkit
 
-![Desktop tool library](docs/interface-light.png)
+A Windows 11 desktop app for working with PDFs, images and document metadata.
+Files are processed on your computer without uploads or an account.
 
-**[Download the Windows app](https://github.com/cell849/PDF-Toolkit/releases/latest)**
+![PDF Toolkit tool library in dark mode](docs/interface.png)
 
-On the release page, expand **Assets** and download **PDFToolkit.zip**.
-Extract it once, open the PDFToolkit folder, and launch PDFToolkit.exe.
-Keep `_internal` beside it. GitHub sign-in is required for this private repository.
-The automatically listed “Source code” ZIP is for development.
+*Current interface preview, rendered from the app on Linux; Windows window chrome may differ.*
 
-To make the portable app easier to find, use **File → Add to Start menu…** or
-**File → Add Desktop shortcut…** in the Windows app. These create shortcuts only
-when requested and do not replace existing shortcuts. If you move the app folder,
-delete and recreate the shortcuts.
+## Download for Windows
 
+1. Open the [latest release](https://github.com/cell849/PDF-Toolkit/releases/latest).
+2. Download **PDFToolkit.zip**, not the automatically generated source archives.
+3. Extract the ZIP and open `PDFToolkit.exe` in the extracted `PDFToolkit` folder.
+   Keep the `_internal` folder beside it.
 
-A Windows 11-first desktop application for fully local PDF and
-image tools. Local tools cover PDF/image conversion, PDF page operations,
-compression, metadata cleaning and optional Office conversion. See CAPABILITIES.md for exact support
-and fidelity limits. Drag-and-drop, options, progress and cancellation are included.
-Rendering uses a separate process; multiple imported PDFs run sequentially.
+The download is portable and has no installer. The executable is self-signed:
+Windows may warn that the publisher is untrusted. The release notes include a
+SHA-256 checksum. Python is bundled; optional tools listed below are not.
 
-## Run on Windows 11
+Use **File → Add to Start menu…** or **File → Add Desktop shortcut…** to create
+shortcuts when wanted. Existing shortcuts are not overwritten. If you move the
+app folder, delete and recreate the shortcuts. To remove the app, delete the
+extracted folder and any shortcuts; preferences and interrupted-job records may
+remain in your user profile. See [packaging notes](packaging/README.md).
 
-Install 64-bit Python 3.13 from python.org, extract this project, and open
-PowerShell in its folder:
+## What it does
+
+- Convert PDF pages to JPEG or PNG, images to PDF, and images between formats.
+- Resize images and set file-size targets or percentages; compare image formats.
+- Merge, split, extract, reorder and visually organize PDF pages; normalize page
+  sizes, add page numbers or watermarks, and compare PDFs.
+- Compress, password-protect, unlock, flatten and redact supported PDFs.
+- Clean or inspect metadata in supported images, documents and media. Metadata
+  cleaning is not universal anonymization: visible content and other personal
+  information may remain. See [metadata limits](docs/METADATA.md).
+- Convert supported Office and text files to PDF, export PDF text or Office
+  formats, batch-rename copies and inspect document details.
+
+[Capabilities and limitations](CAPABILITIES.md) lists the supported formats,
+operations, output fidelity and privacy limits. Some conversions are lossy: PDF
+pages exported as images no longer have selectable text, and Office exports do
+not preserve every layout or element.
+
+### Optional tools
+
+- **LibreOffice**: Office and supported text formats → PDF.
+- **Tesseract and language packs**: searchable PDF OCR.
+- **FFmpeg / ffprobe**: supported audio and video metadata inspection and cleaning.
+
+Install these separately if you need them. The app does not download them.
+
+## Using the app
+
+Choose a category or search for a tool, add files, choose its options and an output
+folder, then run the job. Originals are kept unchanged and outputs do not replace
+existing files. Jobs run in a separate process; cancellation is cooperative and a
+native operation may need to finish first.
+
+After an interrupted job, **Tools → Clean up interrupted jobs…** lets you review
+and remove recognized temporary files. It keeps published outputs and does not
+resume jobs automatically. Unrecognized or unsafe leftovers may require manual
+review. See [recovery details](docs/TOOLS_FOLLOWUP.md).
+
+## Develop and test
+
+On Windows, install 64-bit Python 3.13, open PowerShell in the project folder,
+and run:
 
 ```powershell
 py -3.13 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 .\.venv\Scripts\python.exe -m local_pdf_toolkit
-```
-
-These commands use the environment's Python directly; no PowerShell execution
-policy change or activation is needed. For running without development tools,
-install with `-e .` instead of `-e ".[dev]"`. The installed
-`.\.venv\Scripts\local-pdf-toolkit.exe` launcher also opens the app.
-
-Installation downloads dependencies. Once installed, the application requires
-no account, API key, network access, or AI service. It contains no upload,
-telemetry, or update mechanism.
-
-## Verify
-
-```powershell
-.\.venv\Scripts\python.exe -m ruff check .
-.\.venv\Scripts\python.exe -m ruff format --check .
 .\.venv\Scripts\python.exe -m pytest
-.\.venv\Scripts\python.exe -m build
 ```
 
-Tests use Qt's offscreen platform and synthetic files. To verify the actual
-desktop on Windows, launch normally, confirm both rendering tools appear, convert a PDF, resize the window, and close it. GitHub Actions is configured for Python 3.13
-on Windows and Linux; a workflow configuration is not a completed Windows test.
+For optional HEIC/HEIF support, install `.[dev,media]` instead. The source checkout
+needs its Python dependencies installed; the Windows ZIP does not. Additional
+build instructions and release verification are in [packaging/README.md](packaging/README.md).
 
-Linux development equivalent:
-
-```sh
-python3.13 -m venv .venv
-.venv/bin/python -m pip install -e '.[dev]'
-.venv/bin/python -m pytest
-.venv/bin/python -m local_pdf_toolkit
-```
-
-Headless Linux requires `QT_QPA_PLATFORM=offscreen` for a GUI smoke run;
-normal interactive launch requires a desktop and Qt system libraries.
-`python -m local_pdf_toolkit --self-test` checks conversion with a spawned worker.
-
-## Convert a PDF
-
-1. Add PDFs or drop local files into the window.
-2. Select PDF to JPEG or PDF to PNG. Choose pages (`all` or `1,3-5`),
-   a preset or custom DPI, and quality (JPEG) or transparency (PNG).
-3. Choose an existing output folder and press Convert.
-4. Follow each file's status. Open the output folder to view results.
-
-Images rasterize text and vectors: text is no longer selectable. JPEG uses RGB
-and a white background; PNG optionally preserves transparency. Page ranges are
-rendered once each, in original document order. Names use original page numbers,
-for example `report_page-0003.jpg`.
-
-Originals remain unchanged. Images are staged in a temporary folder on the
-output filesystem, then published with atomic hard links that refuse existing
-names. If the filesystem does not support hard links, conversion fails safely;
-use a local NTFS folder. A collision fails that PDF without overwriting files.
-Completed images from earlier PDFs remain if a later PDF fails or is cancelled.
-Cancellation removes the current PDF's staged/published outputs and stops the
-remaining files. It is cooperative between pages; a native render/encode call
-must finish before cancellation or closing completes. Hard process termination,
-power loss or OS crashes can leave temporary or partial job outputs; crash
-recovery and forced cancellation are not implemented.
-
-The app rejects encrypted, empty, malformed/repaired PDFs, files above 512 MiB,
-documents above 10,000 pages and rendered pages above 40 million pixels. Try lower
-DPI for large pages. These limits reduce resource use; they are not a security
-sandbox or an absolute memory/time limit on native PDF parsing.
-
-## Architecture and next steps
-
-- `core/contracts.py`: adapter capabilities, options, progress and cancellation.
-- `core/registry.py`: explicit adapter registration and discovery.
-- `core/output.py`: same-filesystem staging, no-replace publication and rollback.
-- `core/jobs.py`: one spawned conversion process and Qt message polling.
-- `converters/pdf_images.py`: validated PDF rendering with PyMuPDF.
-- `ui/main_window.py`: registry-driven options, import, status and output access.
-- `tests/`: synthetic rendering, output safety, worker and Qt interaction tests.
-- `VERIFICATION.md`: checks performed and platform limitations.
-
-M2, M3 and M5 are implemented. Move files up/down before merging or creating an
-image PDF. Single-input tools run each file as a separate job; multi-input tools
-combine the entire list. Cancel selected affects that job; Cancel stops the batch.
-Retry failed/cancelled uses your current options and preserves other successes. Double-click a completed
-file row to open its first result. Tool search filters the available operations.
-
-For Office → PDF, install LibreOffice locally on Windows. It is detected in PATH
-or the standard Program Files location. It is not bundled. See CAPABILITIES.md
-for restrictions. Reverse Office exports require no LibreOffice but are lossy.
-
-PDF compression has lossless and explicitly rasterized modes. Image tools offer
-custom dimensions, DPI and editable size targets with units or a percentage of
-the original. Targets are upper bounds. Preserving resolution is the default;
-an unreachable target produces a clear error. Optional downscaling can help
-reach smaller targets. See each tool's options for supported controls.
-
-Reproduce the 100-page baseline with:
-
-```powershell
-.\.venv\Scripts\python.exe benchmarks/benchmark_pdf_images.py --report benchmark.json
-```
-
-M4 build instructions and platform limits are in packaging/README.md.
-
-Runtime dependencies are pinned in pyproject.toml. `uv.lock` records the full
-resolved dependency set; contributors with uv can use `uv sync --extra dev
---frozen`. Pip commands above pin direct dependencies, but do not consume the
-uv lock. The Windows packaging workflow builds a portable desktop app ZIP;
-Python package builds are also available for development.
+## License
 
 The project's own code is available under the [MIT License](LICENSE). The app
 uses PyMuPDF under AGPL-3.0, so the combined app has AGPL obligations when
 distributed. Other dependencies have their own terms; see
 [third-party notices](packaging/THIRD_PARTY.md).
-
-## Confirmed decisions
-
-- Target: Windows 11 first.
-- Output policy: originals remain unchanged, user-selected output directory,
-  temporary outputs and no unapproved overwrite (implemented in M1).
-
-The v0.3 desktop UI uses an Apple-inspired tool library, category sidebar and focused
-workspaces. See docs/DESIGN.md for design decisions and keyboard shortcuts.
-
-
-Metadata cleaning is in the **Privacy** category: images, supported editable
-PowerPoint files and flattened PDFs. Each clean copy has a neutral filename and
-an integrated cleaning report. See [metadata support and limits](docs/METADATA.md)
-before use; visible personal content is not automatically anonymized.
-
-Office metadata coverage now includes DOCX/XLSX, ODT/ODS/ODP and basic RTF.
-See [format coverage](docs/FORMAT_COVERAGE.md) and [proposed useful tools](docs/TOOL_IDEAS.md).
-
-Optional photo codecs: install `-e ".[dev,media]"` instead of `-e ".[dev]"`
-for HEIC/HEIF support. AVIF uses Pillow's available native codec. The Windows
-packaging recipe includes the photo-codec extra. OCR requires separately installed
-Tesseract and local language packs; nothing is downloaded while the app runs.
