@@ -24,7 +24,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
         self._ux_ready = False
         self._sidebar_user_choice = None
         self.registry = registry
-        self.setWindowTitle("Local PDF Toolkit")
+        self.setWindowTitle("PDF Toolkit")
         self.resize(1160, 850)
         self.setAcceptDrops(True)
         self._paths = []

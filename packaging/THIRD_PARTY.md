@@ -1,10 +1,10 @@
 # Third-party dependency notice
 
-The project code is MIT-licensed. Third-party components have their own terms.
+The project code is licensed under GPL-3.0-only. Third-party components have their own terms.
 
 PyMuPDF / MuPDF: AGPL or commercial license. Review and satisfy applicable terms
 before sharing source/binaries, including any corresponding source obligations.
-The Windows build uses PyMuPDF 1.26.7 under AGPL-3.0; an MIT license on this
+The Windows build uses PyMuPDF 1.26.7 under AGPL-3.0; the GPL license on this
 project's own code does not change the AGPL obligations for the combined app.
 PyMuPDF source: https://github.com/pymupdf/PyMuPDF/tree/1.26.7
 App source and build instructions: https://github.com/cell849/PDF-Toolkit
@@ -21,7 +21,7 @@ LibreOffice is separately installed and not included in the archive. Its fonts,
 platform requirements, licenses and conversion behavior remain separate concerns.
 
 Before distributing a build, inventory the bundled components and their
-licenses and notices, and verify that their requirements are met. The MIT
+licenses and notices, and verify that their requirements are met. The GPL
 license for this project does not replace third-party license requirements.
 
 The optional media extra includes pillow-heif and its native HEIF/HEVC codec

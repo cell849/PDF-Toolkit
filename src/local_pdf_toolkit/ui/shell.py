@@ -851,6 +851,13 @@ def add_menus(w):
         action.triggered.connect(callback)
         queue_menu.addAction(action)
 
+    from local_pdf_toolkit.ui.about import show_about
+
+    w.help_menu = w.menuBar().addMenu("&Help")
+    w.about_action = QAction("About PDF Toolkit…", w)
+    w.about_action.triggered.connect(lambda: show_about(w))
+    w.help_menu.addAction(w.about_action)
+
 
 def matches_search(spec, text):
     """Match familiar task words, allowing multiword searches in any order."""

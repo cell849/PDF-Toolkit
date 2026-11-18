@@ -11,7 +11,7 @@ class StartupScreen(QFrame):
     def __init__(self):
         super().__init__(None, Qt.WindowType.SplashScreen | Qt.WindowType.FramelessWindowHint)
         self.setObjectName("startup")
-        self.setAccessibleName("Local PDF Toolkit is starting")
+        self.setAccessibleName("PDF Toolkit is starting")
         colors = DARK if QApplication.styleHints().colorScheme() == Qt.ColorScheme.Dark else LIGHT
         self.setStyleSheet(f"""
             QFrame#startup {{ background: {colors["surface"]}; color: {colors["text"]};
@@ -29,7 +29,7 @@ class StartupScreen(QFrame):
         icon.setPixmap(app_icon().pixmap(48, 48))
         icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(icon)
-        title = QLabel("Local PDF Toolkit")
+        title = QLabel("PDF Toolkit")
         font = title.font()
         font.setPointSizeF(max(font.pointSizeF(), 10) + 3)
         font.setBold(True)
@@ -41,7 +41,7 @@ class StartupScreen(QFrame):
         self.status.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.status)
         progress = QProgressBar()
-        progress.setAccessibleName("Starting Local PDF Toolkit")
+        progress.setAccessibleName("Starting PDF Toolkit")
         progress.setRange(0, 0)
         progress.setTextVisible(False)
         progress.setFixedHeight(4)

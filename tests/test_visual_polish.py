@@ -200,7 +200,7 @@ def test_startup_screen_is_minimal_and_indeterminate(qapp):
     try:
         settle(qapp)
         labels = splash.findChildren(QLabel)
-        assert any(label.text() == "Local PDF Toolkit" for label in labels)
+        assert any(label.text() == "PDF Toolkit" for label in labels)
         assert any(label.pixmap() and not label.pixmap().isNull() for label in labels)
         progress = splash.findChild(QProgressBar)
         assert (progress.minimum(), progress.maximum()) == (0, 0)

@@ -9,7 +9,7 @@ def test_foundation_window_opens_and_closes_with_event_loop(qapp):
     window = MainWindow(ConverterRegistry())
     window.show()
     assert window.isVisible()
-    assert window.windowTitle() == "Local PDF Toolkit"
+    assert window.windowTitle() == "PDF Toolkit"
     assert any("No conversion tools" in label.text() for label in window.findChildren(QLabel))
     QTimer.singleShot(50, window.close)
     QTimer.singleShot(2000, qapp.quit)  # Prevent a regression from hanging CI.

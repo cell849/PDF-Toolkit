@@ -79,8 +79,8 @@ def main() -> int:
     from local_pdf_toolkit.ui.icons import app_icon
 
     app.setWindowIcon(app_icon())
-    app.setApplicationName("Local PDF Toolkit")
-    app.setApplicationVersion("0.8.9")
+    app.setApplicationName("PDF Toolkit")
+    app.setApplicationVersion("0.8.10")
     from local_pdf_toolkit.ui.startup import StartupScreen
 
     splash = StartupScreen()

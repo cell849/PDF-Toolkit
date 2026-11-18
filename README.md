@@ -80,7 +80,10 @@ build instructions and release verification are in [packaging/README.md](packagi
 
 ## License
 
-The project's own code is available under the [MIT License](LICENSE). The app
-uses PyMuPDF under AGPL-3.0, so the combined app has AGPL obligations when
-distributed. Other dependencies have their own terms; see
+Copyright © 2026 PDF Toolkit contributors. The project's code is licensed under
+the [GNU General Public License version 3.0 only](LICENSE). Previously released
+versions remain available under their original terms.
+
+The app uses PyMuPDF under AGPL-3.0, so the combined app has AGPL obligations
+when distributed. Other dependencies have their own terms; see
 [third-party notices](packaging/THIRD_PARTY.md).

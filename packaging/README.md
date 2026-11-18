@@ -1,16 +1,8 @@
 # Windows packaging (M4)
 
-M5 Office functionality and its real-engine tests were completed before this
-packaging setup, as requested. The Windows executable has now been built and
-its spawned-worker self-test verified through GitHub Actions:
-
-https://github.com/cell849/tools/actions/runs/43655035967
-
-Download the `LocalPDFToolkit-Windows-x64` artifact (GitHub sign-in required),
-extract the downloaded artifact ZIP, then extract its enclosed Windows ZIP.
-Launch `LocalPDFToolkit/LocalPDFToolkit.exe` with the `_internal` folder beside it.
-Actions artifacts expire; the source/build workflow remains in the repository.
-Actual Windows 11 manual desktop and LibreOffice validation is still required.
+The Windows executable is built and verified through GitHub Actions. Download
+`PDFToolkit.zip` from the latest GitHub release, extract it once, and launch
+`PDFToolkit.exe` with the `_internal` folder beside it.
 
 To build again, run the workflow or the following local instructions on Windows.
 
@@ -63,9 +55,8 @@ See THIRD_PARTY.md before any redistribution.
 Use https://github.com/cell849/PDF-Toolkit/releases/latest and select the Windows ZIP
 under Assets. Release assets are the app ZIP itself, so extraction is needed
 only once. The source-code archives automatically listed by GitHub are not the app.
-The private repository still requires GitHub sign-in.
 
-To publish a new private release, manually run Windows package with a new
+To publish a new release, manually run Windows package with a new
 `release_tag` such as `v0.2.1`. A release is created only after tests, packaging
 and the frozen-worker smoke check pass; existing releases are not overwritten.
 
