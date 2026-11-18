@@ -56,7 +56,8 @@ def test_changed_pages_have_text_diff_and_highlighted_visual_review(tmp_path):
         pixmap = document[1].get_pixmap()
         with Image.frombytes("RGB", (pixmap.width, pixmap.height), pixmap.samples) as image:
             assert any(
-                red > 240 and green < 20 and blue > 140 for red, green, blue in image.getdata()
+                red > 240 and green < 20 and blue > 140
+                for red, green, blue in image.get_flattened_data()
             )
 
 
@@ -77,7 +78,7 @@ def test_pixel_tolerance_uses_strongest_channel_and_strict_threshold():
         with Image.new("RGB", (2, 1), (234, 250, 250)) as second:
             second.putpixel((1, 0), (250, 233, 250))
             with difference_mask(first, second, 16) as mask:
-                assert list(mask.getdata()) == [0, 255]
+                assert list(mask.get_flattened_data()) == [0, 255]
 
 
 def test_text_limit_never_claims_complete_text_equality(tmp_path, monkeypatch):

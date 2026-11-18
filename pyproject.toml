@@ -9,12 +9,12 @@ description = "A Windows-first, offline desktop PDF toolkit (local document and 
 readme = "README.md"
 license = "GPL-3.0-only"
 requires-python = ">=3.13"
-dependencies = ["PySide6==6.8.3", "PyMuPDF==1.26.7", "Pillow==11.3.0", "python-docx==1.2.0", "openpyxl==3.1.5", "python-pptx==1.0.2"]
+dependencies = ["PySide6==6.8.3", "PyMuPDF==1.26.7", "Pillow==13.0.0", "python-docx==1.2.0", "openpyxl==3.1.5", "python-pptx==1.0.2"]
 
 [project.optional-dependencies]
-media = ["pillow-heif==1.1.1"]
+media = ["pillow-heif==1.3.0"]
 quality = ["pyperf==2.11.0", "mutmut==3.8.1; sys_platform != 'win32'"]
-dev = ["hypothesis==6.170.15", "pytest==8.3.5", "pytest-timeout==2.4.0", "ruff==0.11.13", "build==1.2.2.post1", "psutil==7.0.0", "pyinstaller==6.16.0"]
+dev = ["hypothesis==6.170.15", "pytest==9.0.3", "pytest-timeout==2.4.0", "ruff==0.11.13", "build==1.2.2.post1", "psutil==7.0.0", "pyinstaller==6.16.0"]
 
 [project.gui-scripts]
 local-pdf-toolkit = "local_pdf_toolkit.app:main"

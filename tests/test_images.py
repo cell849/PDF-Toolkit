@@ -44,6 +44,21 @@ def test_resize_formats(images, tmp_path, format):
         assert image.size == (60, 120)
 
 
+def test_heif_image_can_be_converted_to_png(tmp_path):
+    pillow_heif = pytest.importorskip("pillow_heif")
+    if not pillow_heif.libheif_info().get("HEIF"):
+        pytest.skip("HEIF encoder unavailable")
+    pillow_heif.register_heif_opener()
+    source = tmp_path / "sample.heic"
+    Image.new("RGB", (24, 12), "red").save(source, format="HEIF")
+
+    (output,) = run(ImageConverter(FileFormat.PNG), source, tmp_path)
+    with Image.open(output) as image:
+        assert image.size == (24, 12)
+        red, green, blue = image.convert("RGB").getpixel((12, 6))
+        assert red > 200 and green < 40 and blue < 40
+
+
 def test_target_size(images, tmp_path):
     (path,) = run(
         ImageConverter(FileFormat.JPEG),
