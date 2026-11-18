@@ -136,13 +136,20 @@ class _NavigationDelegate(QStyledItemDelegate):
     def icon_rect(self, option):
         # Keep the icon cell fixed as selection, hover, and focus change.
         side = 40
-        x = option.rect.center().x() - side // 2 if self.parent().collapsed else option.rect.left()
+        x = option.rect.left()
         return QRect(x, option.rect.center().y() - side // 2, side, side)
+
+    def cell_rect(self, option):
+        icon = self.icon_rect(option)
+        if self.parent().collapsed:
+            return icon
+        return QRect(option.rect.left(), icon.top(), option.rect.width(), icon.height())
 
     def paint(self, painter, option, index):
         painter.save()
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        cell = self.icon_rect(option)
+        icon = self.icon_rect(option)
+        cell = self.cell_rect(option)
         selected = bool(option.state & QStyle.StateFlag.State_Selected)
         hovered = bool(option.state & QStyle.StateFlag.State_MouseOver)
         if selected or hovered:
@@ -161,7 +168,7 @@ class _NavigationDelegate(QStyledItemDelegate):
             icon_color = QColor("#a54600" if selection.lightness() > 128 else "#ffad59")
         else:
             icon_color = text_color
-        category_icon(index.row(), icon_color).paint(painter, cell, Qt.AlignmentFlag.AlignCenter)
+        category_icon(index.row(), icon_color).paint(painter, icon, Qt.AlignmentFlag.AlignCenter)
         if not self.parent().collapsed:
             painter.setPen(text_color)
             label = option.rect.adjusted(52, 0, -4, 0)

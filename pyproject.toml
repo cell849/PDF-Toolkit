@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "local-pdf-toolkit"
-version = "0.8.6"
+version = "0.8.7"
 description = "A Windows-first, offline desktop PDF toolkit (local document and image tools)."
 readme = "README.md"
 license = "MIT"

@@ -49,6 +49,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
 
     def _show_library(self):
         if not self._active:
+            self.library_scroll.verticalScrollBar().setValue(0)
             self._overview = True
             self._category = "All tools"
             self._compatible_filter = None
@@ -64,6 +65,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
     def _browse_tools(self, name="All tools"):
         if self._active:
             return
+        self.library_scroll.verticalScrollBar().setValue(0)
         self._overview = False
         self._category = name
         from local_pdf_toolkit.ui.shell import CATEGORIES
@@ -111,6 +113,10 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
             if hasattr(self, "_preferences"):
                 self._preferences.setValue("sidebarCollapsed", collapsed)
         self.navigation.set_collapsed(collapsed)
+        # Preserve the expanded header height when its brand is hidden.
+        self.sidebar_header.setMinimumHeight(
+            max(self.sidebar_brand.sizeHint().height(), self.sidebar_toggle.sizeHint().height())
+        )
         self.sidebar_brand.setVisible(not collapsed)
         expanded_width = max(
             180,
@@ -302,6 +308,7 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
     def _category_changed(self, index):
         from local_pdf_toolkit.ui.shell import CATEGORIES
 
+        self.library_scroll.verticalScrollBar().setValue(0)
         self._overview = False
         self._category = CATEGORIES[index] if index >= 0 else "All tools"
         self.pages.setCurrentWidget(self.dashboard)
@@ -309,6 +316,8 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
 
     def _options(self, index):
         self._switch_document_context(index)
+        if hasattr(self, "settings_scroll"):
+            self.settings_scroll.verticalScrollBar().setValue(0)
         for section in (self.options_section, self.advanced_section, self.output_section):
             section.close()
         bodies = (self.options_section.body, self.advanced_section.body)

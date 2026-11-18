@@ -121,7 +121,7 @@ does not install certificates. The workflow additionally modifies a copy of the
 signed EXE and requires verification to reject it with `TRUST_E_BAD_DIGEST`.
 Compare certificate fingerprints against a separately trusted source if publisher
 identity matters; a certificate and fingerprint supplied in the same ZIP do not
-authenticate its producer. The ZIP's `.sha256` file checks download integrity.
+authenticate its producer. The SHA-256 value in the release notes checks download integrity.
 
 For an already-provisioned trusted Windows certificate in `CurrentUser\My`, pass
 `-SigningMode trusted -SigningThumbprint <certificate-thumbprint>` (passing only

@@ -282,7 +282,10 @@ class ToolLibrary(QWidget):
         columns = max(1, min(3, self.width() // 260))
         if indices == self._visible_indices and columns == self.columns:
             return
+        selection_changed = indices != self._visible_indices
         self._visible_indices = indices
+        if selection_changed and hasattr(self.window, "library_scroll"):
+            self.window.library_scroll.verticalScrollBar().setValue(0)
         for row in range(self.grid.rowCount()):
             self.grid.setRowMinimumHeight(row, 0)
         while self.grid.count():
@@ -307,12 +310,14 @@ class ToolLibrary(QWidget):
 
     def update_row_heights(self):
         if not self.grid.count():
+            self.updateGeometry()
             return
         # Measure every tool at the current column width so switching categories
         # does not change card heights, even when longer descriptions are hidden.
         width = self.grid.itemAt(0).widget().width()
         height = max(card.heightForWidth(width) for card in self.cards)
-        for row in range(self.grid.rowCount()):
+        rows = (self.grid.count() + self.columns - 1) // self.columns
+        for row in range(rows):
             self.grid.setRowMinimumHeight(row, height)
         self.updateGeometry()
 
@@ -380,7 +385,10 @@ def build_window(w):
     side.setContentsMargins(10, 18, 10, 14)
     side.setSpacing(12)
     w.sidebar_layout = side
-    sidebar_header = QHBoxLayout()
+    w.sidebar_header = QWidget()
+    w.sidebar_header.setObjectName("inlineControl")
+    sidebar_header = QHBoxLayout(w.sidebar_header)
+    sidebar_header.setContentsMargins(0, 0, 0, 0)
     w.sidebar_brand = label("PDF Toolkit", "section")
     sidebar_header.addWidget(w.sidebar_brand, 1)
     from local_pdf_toolkit.ui.sidebar import CategoryNavigation, ChevronButton, SidebarToggle
@@ -390,7 +398,7 @@ def build_window(w):
     w.sidebar_toggle.clicked.connect(lambda: w._set_sidebar_collapsed(not w.navigation.collapsed))
     w.sidebar_toggle.setAccessibleName("Collapse sidebar")
     sidebar_header.addWidget(w.sidebar_toggle, alignment=Qt.AlignmentFlag.AlignHCenter)
-    side.addLayout(sidebar_header)
+    side.addWidget(w.sidebar_header)
     w.navigation = CategoryNavigation()
     w.navigation.setObjectName("navigation")
     w.navigation.setAccessibleName("Tool categories")

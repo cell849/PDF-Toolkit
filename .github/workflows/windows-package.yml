@@ -66,6 +66,8 @@ jobs:
           SIGNING_MODE: ${{ inputs.signing_mode || 'unsigned' }}
         run: |
           ./packaging/build_windows.ps1 -SigningMode $env:SIGNING_MODE -EphemeralSelfSignedCertificate:($env:SIGNING_MODE -eq 'self-signed')
+      - name: Verify downloaded archive contents
+        run: ./.venv/Scripts/python.exe packaging/verify_archive.py dist/PDFToolkit.zip
       - name: Reject a tampered self-signed executable
         if: inputs.signing_mode == 'self-signed'
         shell: pwsh
@@ -121,7 +123,11 @@ jobs:
             Start-Sleep -Seconds 20
           }
           if (-not $checksPassed) { throw 'Required Checks workflow did not complete in time.' }
-          git archive --format=zip --output=dist/PDFToolkit-source.zip $env:GITHUB_SHA
-          if ($LASTEXITCODE -ne 0) { throw 'Could not create the source archive.' }
-          gh release create $env:RELEASE_TAG dist/PDFToolkit.zip dist/PDFToolkit.zip.sha256 dist/PDFToolkit-source.zip --target $env:GITHUB_SHA --title "PDF Toolkit $env:RELEASE_TAG" --notes-file packaging/RELEASE_NOTES.md
+          $hash = (Get-FileHash -Algorithm SHA256 dist/PDFToolkit.zip).Hash.ToLowerInvariant()
+          $notes = Get-Content -Raw packaging/RELEASE_NOTES.md
+          $notes += "`n`nSHA-256 (PDFToolkit.zip): $hash`n"
+          $notesPath = Join-Path $env:RUNNER_TEMP 'release-notes.md'
+          Set-Content -LiteralPath $notesPath -Value $notes -Encoding utf8
+          $title = $env:RELEASE_TAG.Substring(1)
+          gh release create $env:RELEASE_TAG dist/PDFToolkit.zip --target $env:GITHUB_SHA --title $title --notes-file $notesPath
           if ($LASTEXITCODE -ne 0) { throw 'Release creation failed.' }
