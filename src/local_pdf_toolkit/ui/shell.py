@@ -755,12 +755,17 @@ def add_menus(w):
     w.file_menu = file_menu
     from local_pdf_toolkit.ui.start_menu import add_shortcut, available
 
-    w.start_menu_action = QAction("Add to Start menu…", w)
-    w.start_menu_action.setEnabled(available())
-    if not available():
-        w.start_menu_action.setToolTip("Available in the Windows app download")
-    w.start_menu_action.triggered.connect(lambda: add_shortcut(w))
-    file_menu.addAction(w.start_menu_action)
+    for attribute, label, location in (
+        ("start_menu_action", "Add to Start menu…", "start_menu"),
+        ("desktop_shortcut_action", "Add Desktop shortcut…", "desktop"),
+    ):
+        action = QAction(label, w)
+        setattr(w, attribute, action)
+        action.setEnabled(available())
+        if not available():
+            action.setToolTip("Available in the Windows app download")
+        action.triggered.connect(lambda checked=False, where=location: add_shortcut(w, where))
+        file_menu.addAction(action)
     file_menu.addSeparator()
     tools_menu = w.menuBar().addMenu("&Tools")
     w.tools_menu = tools_menu

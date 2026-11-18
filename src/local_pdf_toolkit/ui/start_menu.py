@@ -1,4 +1,4 @@
-"""Opt-in Windows Start menu shortcut for the portable executable."""
+"""Opt-in Windows shortcuts for the portable executable."""
 
 import sys
 
@@ -7,15 +7,18 @@ from PySide6.QtWidgets import QMessageBox
 
 _SCRIPT = r"""
 $ErrorActionPreference = 'Stop'
-$programs = [Environment]::GetFolderPath('Programs')
-if (-not $programs -or -not (Test-Path -LiteralPath $programs -PathType Container)) {
-    throw 'The Start menu folder could not be found.'
+$kind = $env:PDF_TOOLKIT_SHORTCUT_LOCATION
+if ($kind -eq 'start_menu') { $folder = [Environment]::GetFolderPath('Programs') }
+elseif ($kind -eq 'desktop') { $folder = [Environment]::GetFolderPath('DesktopDirectory') }
+else { throw 'Unsupported shortcut location.' }
+if (-not $folder -or -not (Test-Path -LiteralPath $folder -PathType Container)) {
+    throw 'The shortcut folder could not be found.'
 }
-$destination = Join-Path $programs 'PDF Toolkit.lnk'
+$destination = Join-Path $folder 'PDF Toolkit.lnk'
 if (Test-Path -LiteralPath $destination) {
     exit 2
 }
-$temporary = Join-Path $programs ('.pdf-toolkit-' + [guid]::NewGuid().ToString('N') + '.lnk')
+$temporary = Join-Path $folder ('.pdf-toolkit-' + [guid]::NewGuid().ToString('N') + '.lnk')
 try {
     $shell = New-Object -ComObject WScript.Shell
     $shortcut = $shell.CreateShortcut($temporary)
@@ -34,30 +37,38 @@ def available():
     return sys.platform == "win32" and bool(getattr(sys, "frozen", False))
 
 
-def add_shortcut(window):
-    if not available() or getattr(window, "_start_menu_process", None) is not None:
+def add_shortcut(window, location):
+    if location not in ("start_menu", "desktop"):
+        raise ValueError("Unsupported shortcut location")
+    if not available() or getattr(window, "_shortcut_process", None) is not None:
         return
+    location_name = "Start menu" if location == "start_menu" else "Desktop"
     process = QProcess(window)
     timeout = QTimer(process)
     timeout.setSingleShot(True)
     timeout.timeout.connect(process.kill)
     environment = QProcessEnvironment.systemEnvironment()
     environment.insert("PDF_TOOLKIT_SHORTCUT_TARGET", sys.executable)
+    environment.insert("PDF_TOOLKIT_SHORTCUT_LOCATION", location)
     process.setProcessEnvironment(environment)
-    window._start_menu_process = process
-    window.start_menu_action.setEnabled(False)
+    window._shortcut_process = process
+    actions = (window.start_menu_action, window.desktop_shortcut_action)
+    for action in actions:
+        action.setEnabled(False)
 
     def finish(success, detail=""):
-        if window._start_menu_process is not process:
+        if window._shortcut_process is not process:
             return
         timeout.stop()
-        window._start_menu_process = None
-        window.start_menu_action.setEnabled(True)
+        window._shortcut_process = None
+        for action in actions:
+            action.setEnabled(True)
         if success:
+            indexing = " Windows may take a moment to list it." if location == "start_menu" else ""
             QMessageBox.information(
                 window,
-                "Start menu shortcut",
-                "PDF Toolkit was added to your Start menu. Windows may take a moment to list it. "
+                f"{location_name} shortcut",
+                f"PDF Toolkit was added to your {location_name}.{indexing} "
                 "If you move the app folder, delete the old shortcut before adding it again.",
             )
         else:
@@ -69,9 +80,9 @@ def add_shortcut(window):
         process.deleteLater()
 
     def completed(code, status):
+        place = "in your Start menu" if location == "start_menu" else "on your Desktop"
         error = (
-            "A PDF Toolkit shortcut already exists in your Start menu. "
-            "Delete it before adding a new one."
+            f"A PDF Toolkit shortcut already exists {place}. Delete it before adding a new one."
             if code == 2
             else ""
         )
