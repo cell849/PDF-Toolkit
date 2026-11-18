@@ -263,7 +263,7 @@ wheels = [
 
 [[package]]
 name = "local-pdf-toolkit"
-version = "0.8.10"
+version = "0.8.11"
 source = { editable = "." }
 dependencies = [
     { name = "openpyxl" },

@@ -1,9 +1,9 @@
-# 0.8.10
+# 0.8.11
 
-- Add Help → About PDF Toolkit, showing the app version and links to releases and license notices.
-- License project code under GNU GPL version 3.0 only. Distributed dependencies have their own terms; PyMuPDF is distributed under AGPL-3.0.
+- Update Pillow, pillow-heif and pytest to address known dependency vulnerabilities.
+- Verify HEIF image conversion with the updated libraries.
 
-**[Download PDFToolkit.zip for Windows](https://github.com/cell849/PDF-Toolkit/releases/download/v0.8.10/PDFToolkit.zip)**
+**[Download PDFToolkit.zip for Windows](https://github.com/cell849/PDF-Toolkit/releases/download/v0.8.11/PDFToolkit.zip)**
 
 Extract the complete folder and open **PDFToolkit.exe**. Keep `_internal` beside it.
 GitHub’s Source code links below the download contain the corresponding project source.
