@@ -1,8 +1,9 @@
-# 0.8.8
+# 0.8.9
 
-- Align the collapsed sidebar toggle with the navigation icon cells.
+- Add optional Start menu and Desktop shortcuts from the File menu.
+- Existing shortcuts are preserved; the app remains portable.
 
-**[Download PDFToolkit.zip for Windows](https://github.com/cell849/PDF-Toolkit/releases/download/v0.8.8/PDFToolkit.zip)**
+**[Download PDFToolkit.zip for Windows](https://github.com/cell849/PDF-Toolkit/releases/download/v0.8.9/PDFToolkit.zip)**
 
 Extract the complete folder and open **PDFToolkit.exe**. Keep `_internal` beside it.
 GitHub's Source code links below the download contain the corresponding project source.

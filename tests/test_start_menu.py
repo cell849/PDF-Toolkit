@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -43,6 +44,23 @@ def test_windows_shortcut_creation_and_no_overwrite(tmp_path, location):
     shortcut = tmp_path / "PDF Toolkit.lnk"
     before = shortcut.read_bytes()
     assert before
+    env["PDF_TOOLKIT_TEST_SHORTCUT"] = str(shortcut)
+    read_target = subprocess.run(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            "(New-Object -ComObject WScript.Shell).CreateShortcut("
+            "$env:PDF_TOOLKIT_TEST_SHORTCUT).TargetPath",
+        ],
+        env=env,
+        capture_output=True,
+        timeout=30,
+        check=True,
+        text=True,
+    )
+    assert Path(read_target.stdout.strip()).resolve() == target.resolve()
     second = subprocess.run(command, env=env, capture_output=True, timeout=30, check=False)
     assert second.returncode == 2
     assert shortcut.read_bytes() == before
