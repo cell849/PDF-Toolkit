@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from PySide6.QtCore import QTimer, QUrl
+from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -118,6 +118,10 @@ class MainWindow(WorkspaceBehavior, QMainWindow):
             max(self.sidebar_brand.sizeHint().height(), self.sidebar_toggle.sizeHint().height())
         )
         self.sidebar_brand.setVisible(not collapsed)
+        self.sidebar_header.layout().setAlignment(
+            self.sidebar_toggle,
+            Qt.AlignmentFlag.AlignLeft if collapsed else Qt.AlignmentFlag.AlignHCenter,
+        )
         expanded_width = max(
             180,
             max(

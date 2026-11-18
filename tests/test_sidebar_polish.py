@@ -47,6 +47,9 @@ def test_sidebar_icons_keep_position_when_toggled(qapp):
                 center = nav.itemDelegate().icon_rect(option).center()
                 row_positions.append(nav.viewport().mapTo(window, center))
             positions.append(row_positions)
+            if collapsed:
+                toggle = window.sidebar_toggle.mapTo(window, window.sidebar_toggle.rect().center())
+                assert toggle.x() == row_positions[0].x()
         assert positions[0] == positions[1] == positions[2]
         brand_left = window.sidebar_brand.mapTo(window, window.sidebar_brand.rect().topLeft()).x()
         cell_left = (
